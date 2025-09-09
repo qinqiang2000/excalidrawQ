@@ -1,37 +1,60 @@
-import { STORAGE_KEYS } from "../app_constants";
+import { STORAGE_KEYS, getSessionStorageKey } from "../app_constants";
 
 // in-memory state (this tab's current state) versions. Currently just
 // timestamps of the last time the state was saved to browser storage.
-const LOCAL_STATE_VERSIONS = {
-  [STORAGE_KEYS.VERSION_DATA_STATE]: -1,
-  [STORAGE_KEYS.VERSION_FILES]: -1,
+// Session-aware versions to support multi-window independence
+const LOCAL_STATE_VERSIONS: { [key: string]: number } = {};
+
+// Initialize session-specific version keys
+const initVersionKeys = () => {
+  const sessionVersionDataKey = getSessionStorageKey(
+    STORAGE_KEYS.VERSION_DATA_STATE,
+  );
+  const sessionVersionFilesKey = getSessionStorageKey(
+    STORAGE_KEYS.VERSION_FILES,
+  );
+
+  if (!(sessionVersionDataKey in LOCAL_STATE_VERSIONS)) {
+    LOCAL_STATE_VERSIONS[sessionVersionDataKey] = -1;
+  }
+  if (!(sessionVersionFilesKey in LOCAL_STATE_VERSIONS)) {
+    LOCAL_STATE_VERSIONS[sessionVersionFilesKey] = -1;
+  }
 };
 
-type BrowserStateTypes = keyof typeof LOCAL_STATE_VERSIONS;
+// Initialize on module load
+initVersionKeys();
+
+type BrowserStateTypes = keyof typeof STORAGE_KEYS;
 
 export const isBrowserStorageStateNewer = (type: BrowserStateTypes) => {
-  const storageTimestamp = JSON.parse(localStorage.getItem(type) || "-1");
-  return storageTimestamp > LOCAL_STATE_VERSIONS[type];
+  initVersionKeys(); // Ensure keys are initialized
+  const sessionKey = getSessionStorageKey(STORAGE_KEYS[type]);
+  const storageTimestamp = JSON.parse(localStorage.getItem(sessionKey) || "-1");
+  return storageTimestamp > LOCAL_STATE_VERSIONS[sessionKey];
 };
 
 export const updateBrowserStateVersion = (type: BrowserStateTypes) => {
+  initVersionKeys(); // Ensure keys are initialized
   const timestamp = Date.now();
+  const sessionKey = getSessionStorageKey(STORAGE_KEYS[type]);
   try {
-    localStorage.setItem(type, JSON.stringify(timestamp));
-    LOCAL_STATE_VERSIONS[type] = timestamp;
+    localStorage.setItem(sessionKey, JSON.stringify(timestamp));
+    LOCAL_STATE_VERSIONS[sessionKey] = timestamp;
   } catch (error) {
     console.error("error while updating browser state verison", error);
   }
 };
 
 export const resetBrowserStateVersions = () => {
+  initVersionKeys(); // Ensure keys are initialized
   try {
-    for (const key of Object.keys(
-      LOCAL_STATE_VERSIONS,
-    ) as BrowserStateTypes[]) {
+    const keys: BrowserStateTypes[] = ["VERSION_DATA_STATE", "VERSION_FILES"];
+    for (const key of keys) {
+      const sessionKey = getSessionStorageKey(STORAGE_KEYS[key]);
       const timestamp = -1;
-      localStorage.setItem(key, JSON.stringify(timestamp));
-      LOCAL_STATE_VERSIONS[key] = timestamp;
+      localStorage.setItem(sessionKey, JSON.stringify(timestamp));
+      LOCAL_STATE_VERSIONS[sessionKey] = timestamp;
     }
   } catch (error) {
     console.error("error while resetting browser state verison", error);

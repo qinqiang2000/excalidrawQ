@@ -51,6 +51,28 @@ export const STORAGE_KEYS = {
   __LEGACY_LOCAL_STORAGE_LIBRARY: "excalidraw-library",
 } as const;
 
+/**
+ * Get session-aware storage keys
+ * Uses a function-based approach to avoid circular dependencies
+ */
+export const getSessionStorageKey = (
+  baseKey: keyof typeof STORAGE_KEYS | string,
+): string => {
+  // Avoid circular dependency by accessing sessionManager only when needed
+  const actualKey =
+    typeof baseKey === "string" ? baseKey : STORAGE_KEYS[baseKey];
+
+  // Get session ID from URL params directly to avoid circular import
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get("session");
+
+  if (!sessionId || sessionId === "default") {
+    return actualKey; // Backward compatibility for default session
+  }
+
+  return `${actualKey}:${sessionId}`;
+};
+
 export const COOKIES = {
   AUTH_STATE_COOKIE: "excplus-auth",
 } as const;

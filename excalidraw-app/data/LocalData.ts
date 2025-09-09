@@ -38,7 +38,11 @@ import type {
 import type { MaybePromise } from "@excalidraw/common/utility-types";
 import type { FileSystemHandle } from "@excalidraw/excalidraw/data/filesystem";
 
-import { SAVE_TO_LOCAL_STORAGE_TIMEOUT, STORAGE_KEYS } from "../app_constants";
+import {
+  SAVE_TO_LOCAL_STORAGE_TIMEOUT,
+  STORAGE_KEYS,
+  getSessionStorageKey,
+} from "../app_constants";
 
 import { FileManager } from "./FileManager";
 import { Locker } from "./Locker";
@@ -82,14 +86,14 @@ const saveDataStateToLocalStorage = (
     }
 
     localStorage.setItem(
-      STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS,
+      getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS),
       JSON.stringify(clearElementsForLocalStorage(elements)),
     );
     localStorage.setItem(
-      STORAGE_KEYS.LOCAL_STORAGE_APP_STATE,
+      getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_APP_STATE),
       JSON.stringify(_appState),
     );
-    updateBrowserStateVersion(STORAGE_KEYS.VERSION_DATA_STATE);
+    updateBrowserStateVersion("VERSION_DATA_STATE");
   } catch (error: any) {
     // Unable to access window.localStorage
     console.error(error);
@@ -221,7 +225,7 @@ export class LocalData {
       // before we use `storage` event synchronization, let's update the flag
       // optimistically. Hopefully nothing fails, and an IDB read executed
       // before an IDB write finishes will read the latest value.
-      updateBrowserStateVersion(STORAGE_KEYS.VERSION_FILES);
+      updateBrowserStateVersion("VERSION_FILES");
 
       await Promise.all(
         [...addedFiles].map(async ([id, fileData]) => {
@@ -273,7 +277,7 @@ export class LibraryIndexedDBAdapter {
 export class LibraryLocalStorageMigrationAdapter {
   static load() {
     const LSData = localStorage.getItem(
-      STORAGE_KEYS.__LEGACY_LOCAL_STORAGE_LIBRARY,
+      getSessionStorageKey(STORAGE_KEYS.__LEGACY_LOCAL_STORAGE_LIBRARY),
     );
     if (LSData != null) {
       const libraryItems: ImportedDataState["libraryItems"] =
@@ -285,6 +289,8 @@ export class LibraryLocalStorageMigrationAdapter {
     return null;
   }
   static clear() {
-    localStorage.removeItem(STORAGE_KEYS.__LEGACY_LOCAL_STORAGE_LIBRARY);
+    localStorage.removeItem(
+      getSessionStorageKey(STORAGE_KEYS.__LEGACY_LOCAL_STORAGE_LIBRARY),
+    );
   }
 }

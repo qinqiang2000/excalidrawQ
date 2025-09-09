@@ -84,7 +84,6 @@ import {
 import {
   FIREBASE_STORAGE_PREFIXES,
   isExcalidrawPlusSignedUser,
-  STORAGE_KEYS,
   SYNC_BROWSER_TABS_TIMEOUT,
 } from "./app_constants";
 import Collab, {
@@ -133,6 +132,7 @@ import DebugCanvas, {
 } from "./components/DebugCanvas";
 import { AIComponents } from "./components/AI";
 import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
+import { sessionManager } from "./data/SessionManager";
 
 import "./index.scss";
 
@@ -337,6 +337,13 @@ const ExcalidrawWrapper = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const isCollabDisabled = isRunningInIframe();
 
+  // Initialize session manager early in the component lifecycle
+  useEffect(() => {
+    // Session manager is already initialized as a singleton
+    // This just ensures it's loaded and ready
+    sessionManager.getSessionId();
+  }, []);
+
   const { editorTheme, appTheme, setAppTheme } = useHandleAppTheme();
 
   const [langCode, setLangCode] = useAppLangCode();
@@ -507,7 +514,7 @@ const ExcalidrawWrapper = () => {
         ((collabAPI && !collabAPI.isCollaborating()) || isCollabDisabled)
       ) {
         // don't sync if local state is newer or identical to browser state
-        if (isBrowserStorageStateNewer(STORAGE_KEYS.VERSION_DATA_STATE)) {
+        if (isBrowserStorageStateNewer("VERSION_DATA_STATE")) {
           // Use async function to load fileHandle as well
           importFromLocalStorageWithFileHandle().then((localDataState) => {
             const username = importUsernameFromLocalStorage();
@@ -527,7 +534,7 @@ const ExcalidrawWrapper = () => {
           });
         }
 
-        if (isBrowserStorageStateNewer(STORAGE_KEYS.VERSION_FILES)) {
+        if (isBrowserStorageStateNewer("VERSION_FILES")) {
           const elements = excalidrawAPI.getSceneElementsIncludingDeleted();
           const currFiles = excalidrawAPI.getFiles();
           const fileIds =
@@ -943,6 +950,22 @@ const ExcalidrawWrapper = () => {
 
         <CommandPalette
           customCommandPaletteItems={[
+            {
+              label: "New Window",
+              category: DEFAULT_CATEGORIES.app,
+              predicate: true,
+              keywords: [
+                "new",
+                "window",
+                "tab",
+                "independent",
+                "separate",
+                "session",
+              ],
+              perform: () => {
+                sessionManager.openNewSession();
+              },
+            },
             {
               label: t("labels.liveCollaboration"),
               category: DEFAULT_CATEGORIES.app,

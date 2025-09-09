@@ -7,14 +7,14 @@ import { clearElementsForLocalStorage } from "@excalidraw/element";
 import type { ExcalidrawElement } from "@excalidraw/element/types";
 import type { AppState } from "@excalidraw/excalidraw/types";
 
-import { STORAGE_KEYS } from "../app_constants";
+import { STORAGE_KEYS, getSessionStorageKey } from "../app_constants";
 
 import { LocalData } from "./LocalData";
 
 export const saveUsernameToLocalStorage = (username: string) => {
   try {
     localStorage.setItem(
-      STORAGE_KEYS.LOCAL_STORAGE_COLLAB,
+      getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_COLLAB),
       JSON.stringify({ username }),
     );
   } catch (error: any) {
@@ -25,7 +25,9 @@ export const saveUsernameToLocalStorage = (username: string) => {
 
 export const importUsernameFromLocalStorage = (): string | null => {
   try {
-    const data = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_COLLAB);
+    const data = localStorage.getItem(
+      getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_COLLAB),
+    );
     if (data) {
       return JSON.parse(data).username;
     }
@@ -42,8 +44,12 @@ export const importFromLocalStorage = () => {
   let savedState = null;
 
   try {
-    savedElements = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS);
-    savedState = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_APP_STATE);
+    savedElements = localStorage.getItem(
+      getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS),
+    );
+    savedState = localStorage.getItem(
+      getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_APP_STATE),
+    );
   } catch (error: any) {
     // Unable to access localStorage
     console.error(error);
@@ -97,7 +103,9 @@ export const importFromLocalStorageWithFileHandle = async () => {
 
 export const getElementsStorageSize = () => {
   try {
-    const elements = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS);
+    const elements = localStorage.getItem(
+      getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS),
+    );
     const elementsSize = elements?.length || 0;
     return elementsSize;
   } catch (error: any) {
@@ -108,8 +116,12 @@ export const getElementsStorageSize = () => {
 
 export const getTotalStorageSize = () => {
   try {
-    const appState = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_APP_STATE);
-    const collab = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_COLLAB);
+    const appState = localStorage.getItem(
+      getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_APP_STATE),
+    );
+    const collab = localStorage.getItem(
+      getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_COLLAB),
+    );
 
     const appStateSize = appState?.length || 0;
     const collabSize = collab?.length || 0;
