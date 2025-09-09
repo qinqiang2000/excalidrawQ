@@ -36,6 +36,7 @@ import type {
   BinaryFiles,
 } from "@excalidraw/excalidraw/types";
 import type { MaybePromise } from "@excalidraw/common/utility-types";
+import type { FileSystemHandle } from "@excalidraw/excalidraw/data/filesystem";
 
 import { SAVE_TO_LOCAL_STORAGE_TIMEOUT, STORAGE_KEYS } from "../app_constants";
 
@@ -44,6 +45,7 @@ import { Locker } from "./Locker";
 import { updateBrowserStateVersion } from "./tabSync";
 
 const filesStore = createStore("files-db", "files-store");
+const fileHandleStore = createStore("fileHandle-db", "fileHandle-store");
 
 class LocalFileManager extends FileManager {
   clearObsoleteFiles = async (opts: { currentFileIds: FileId[] }) => {
@@ -106,6 +108,9 @@ export class LocalData {
     ) => {
       saveDataStateToLocalStorage(elements, appState);
 
+      // Save FileHandle to IndexedDB separately since it can't be JSON serialized
+      await this.saveFileHandle(appState.fileHandle);
+
       await this.fileStorage.saveFiles({
         elements,
         files,
@@ -144,6 +149,33 @@ export class LocalData {
 
   static isSavePaused = () => {
     return document.hidden || this.locker.isLocked();
+  };
+
+  // ---------------------------------------------------------------------------
+  // FileHandle storage methods
+  // ---------------------------------------------------------------------------
+
+  /** Save FileHandle to IndexedDB */
+  static saveFileHandle = async (fileHandle: FileSystemHandle | null) => {
+    try {
+      if (fileHandle) {
+        await set("currentFileHandle", fileHandle, fileHandleStore);
+      } else {
+        await del("currentFileHandle", fileHandleStore);
+      }
+    } catch (error) {
+      console.warn("Failed to save fileHandle to IndexedDB:", error);
+    }
+  };
+
+  /** Load FileHandle from IndexedDB */
+  static loadFileHandle = async (): Promise<FileSystemHandle | null> => {
+    try {
+      return (await get("currentFileHandle", fileHandleStore)) || null;
+    } catch (error) {
+      console.warn("Failed to load fileHandle from IndexedDB:", error);
+      return null;
+    }
   };
 
   // ---------------------------------------------------------------------------

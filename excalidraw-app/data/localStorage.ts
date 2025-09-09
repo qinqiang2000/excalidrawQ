@@ -9,6 +9,8 @@ import type { AppState } from "@excalidraw/excalidraw/types";
 
 import { STORAGE_KEYS } from "../app_constants";
 
+import { LocalData } from "./LocalData";
+
 export const saveUsernameToLocalStorage = (username: string) => {
   try {
     localStorage.setItem(
@@ -71,6 +73,25 @@ export const importFromLocalStorage = () => {
       // Do nothing because appState is already null
     }
   }
+  return { elements, appState };
+};
+
+export const importFromLocalStorageWithFileHandle = async () => {
+  const { elements, appState } = importFromLocalStorage();
+
+  // Load fileHandle from IndexedDB if appState exists
+  if (appState) {
+    try {
+      const fileHandle = await LocalData.loadFileHandle();
+      if (fileHandle) {
+        appState.fileHandle = fileHandle;
+      }
+    } catch (error) {
+      console.warn("Failed to load fileHandle:", error);
+      // Continue without fileHandle - graceful degradation
+    }
+  }
+
   return { elements, appState };
 };
 

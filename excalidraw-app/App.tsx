@@ -110,7 +110,7 @@ import {
 
 import { updateStaleImageStatuses } from "./data/FileManager";
 import {
-  importFromLocalStorage,
+  importFromLocalStorageWithFileHandle,
   importUsernameFromLocalStorage,
 } from "./data/localStorage";
 
@@ -217,7 +217,7 @@ const initializeScene = async (opts: {
   );
   const externalUrlMatch = window.location.hash.match(/^#url=(.*)$/);
 
-  const localDataState = importFromLocalStorage();
+  const localDataState = await importFromLocalStorageWithFileHandle();
 
   let scene: RestoredDataState & {
     scrollToContent?: boolean;
@@ -508,21 +508,23 @@ const ExcalidrawWrapper = () => {
       ) {
         // don't sync if local state is newer or identical to browser state
         if (isBrowserStorageStateNewer(STORAGE_KEYS.VERSION_DATA_STATE)) {
-          const localDataState = importFromLocalStorage();
-          const username = importUsernameFromLocalStorage();
-          setLangCode(getPreferredLanguage());
-          excalidrawAPI.updateScene({
-            ...localDataState,
-            captureUpdate: CaptureUpdateAction.NEVER,
+          // Use async function to load fileHandle as well
+          importFromLocalStorageWithFileHandle().then((localDataState) => {
+            const username = importUsernameFromLocalStorage();
+            setLangCode(getPreferredLanguage());
+            excalidrawAPI.updateScene({
+              ...localDataState,
+              captureUpdate: CaptureUpdateAction.NEVER,
+            });
+            LibraryIndexedDBAdapter.load().then((data) => {
+              if (data) {
+                excalidrawAPI.updateLibrary({
+                  libraryItems: data.libraryItems,
+                });
+              }
+            });
+            collabAPI?.setUsername(username || "");
           });
-          LibraryIndexedDBAdapter.load().then((data) => {
-            if (data) {
-              excalidrawAPI.updateLibrary({
-                libraryItems: data.libraryItems,
-              });
-            }
-          });
-          collabAPI?.setUsername(username || "");
         }
 
         if (isBrowserStorageStateNewer(STORAGE_KEYS.VERSION_FILES)) {
