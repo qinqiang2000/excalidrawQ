@@ -86,13 +86,13 @@ deploy_on_server() {
     print_step "连接服务器并部署..."
     
     # 测试连接
-    if ! ssh -i "${SSH_KEY/#\~/$HOME}" -o ConnectTimeout=10 -o BatchMode=yes root@"$SERVER" exit 2>/dev/null; then
+    if ! ssh -i "${SSH_KEY/#\~/$HOME}" -o ConnectTimeout=30 -o BatchMode=yes root@"$SERVER" exit 2>/dev/null; then
         print_warning "无法连接到服务器，请检查网络和SSH密钥"
         exit 1
     fi
     
-    # 在服务器上执行部署
-    ssh -i "${SSH_KEY/#\~/$HOME}" root@"$SERVER" << EOF
+    # 在服务器上执行部署（增加超时和保持连接）
+    ssh -i "${SSH_KEY/#\~/$HOME}" -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ConnectTimeout=30 root@"$SERVER" << EOF
 set -e
 
 # 进入项目目录
@@ -101,8 +101,17 @@ cd $REMOTE_DIR
 echo "📥 拉取最新代码..."
 git pull origin qiang
 
-echo "🔨 构建Docker镜像..."
-docker build -t $IMAGE_NAME .
+echo "🔨 构建Docker镜像（预计3-8分钟）..."
+echo "⏳ 正在下载依赖和编译代码，请耐心等待..."
+echo "📊 如果超过10分钟无响应，可按Ctrl+C取消"
+
+# 设置Docker构建超时为600秒（10分钟）
+timeout 600 docker build -t $IMAGE_NAME . || {
+    echo "❌ Docker构建超时或失败"
+    echo "💡 可能原因：网络慢、服务器资源不足"
+    echo "🔄 建议：稍后重试或检查服务器资源"
+    exit 1
+}
 
 echo "🔄 重启容器..."
 # 停止并删除旧容器
