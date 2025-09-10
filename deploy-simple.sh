@@ -73,7 +73,7 @@ push_code() {
     fi
     
     # 推送到远程
-    git push origin qiang || {
+    git push excalidrawQ qiang || {
         print_warning "推送失败，请检查网络连接和权限"
         exit 1
     }
@@ -99,7 +99,7 @@ set -e
 cd $REMOTE_DIR
 
 echo "📥 拉取最新代码..."
-git pull origin qiang
+git pull excalidrawQ qiang
 
 echo "🔨 构建Docker镜像..."
 docker build -t $IMAGE_NAME .
