@@ -17,6 +17,8 @@ import {
   debounce,
 } from "@excalidraw/common";
 import { clearElementsForLocalStorage } from "@excalidraw/element";
+import { saveAsJSON } from "@excalidraw/excalidraw/data";
+import { isImageFileHandle } from "@excalidraw/excalidraw/data/blob";
 import {
   createStore,
   entries,
@@ -103,6 +105,32 @@ const saveDataStateToLocalStorage = (
 type SavingLockTypes = "collaboration";
 
 export class LocalData {
+  // Auto-save to associated file with longer debounce to avoid frequent file writes
+  private static _saveToFile = debounce(
+    async (
+      elements: readonly ExcalidrawElement[],
+      appState: AppState,
+      files: BinaryFiles,
+    ) => {
+      // Only auto-save to file if we have a fileHandle and it's not an image file
+      if (appState.fileHandle && !isImageFileHandle(appState.fileHandle)) {
+        try {
+          await saveAsJSON(
+            elements,
+            appState,
+            files,
+            appState.name || "Untitled"
+          );
+        } catch (error: any) {
+          // Silent failure to avoid disrupting user experience
+          // Only log to console for debugging
+          console.warn("Auto-save to file failed:", error);
+        }
+      }
+    },
+    2000, // 2 second debounce to avoid frequent file writes
+  );
+
   private static _save = debounce(
     async (
       elements: readonly ExcalidrawElement[],
@@ -114,6 +142,9 @@ export class LocalData {
 
       // Save FileHandle to IndexedDB separately since it can't be JSON serialized
       await this.saveFileHandle(appState.fileHandle);
+
+      // Trigger auto-save to associated file (non-blocking)
+      this._saveToFile(elements, appState, files);
 
       await this.fileStorage.saveFiles({
         elements,
@@ -139,6 +170,10 @@ export class LocalData {
 
   static flushSave = () => {
     this._save.flush();
+  };
+
+  static flushFileAutoSave = () => {
+    this._saveToFile.flush();
   };
 
   private static locker = new Locker<SavingLockTypes>();
