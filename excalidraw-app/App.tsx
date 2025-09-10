@@ -495,40 +495,65 @@ const ExcalidrawWrapper = () => {
     });
 
     // Handle PWA file launching via launchQueue
-    if ('launchQueue' in window && window.launchQueue) {
+    if ("launchQueue" in window && window.launchQueue) {
       window.launchQueue.setConsumer(async (launchParams) => {
-        console.log("launchQueue triggered with files:", launchParams.files?.length);
+        console.log(
+          "launchQueue triggered with files:",
+          launchParams.files?.length,
+        );
         if (launchParams.files && launchParams.files.length > 0) {
           try {
             const currentUrl = new URL(window.location.href);
             const currentSession = currentUrl.searchParams.get("session");
-            console.log("launchQueue - current URL:", window.location.href, "session:", currentSession);
-            
+            console.log(
+              "launchQueue - current URL:",
+              window.location.href,
+              "session:",
+              currentSession,
+            );
+
             // If we don't have a unique session, generate one and reload
             if (!currentSession || currentSession === "default") {
-              const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+              const newSessionId = `session_${Date.now()}_${Math.random()
+                .toString(36)
+                .substring(2, 11)}`;
               currentUrl.searchParams.set("session", newSessionId);
-              console.log("launchQueue - generating new session:", newSessionId, "new URL:", currentUrl.toString());
-              
+              console.log(
+                "launchQueue - generating new session:",
+                newSessionId,
+                "new URL:",
+                currentUrl.toString(),
+              );
+
               // Store the file handle for after reload
               const fileHandle = launchParams.files[0] as FileSystemFileHandle;
-              sessionStorage.setItem('pendingFileHandle', JSON.stringify({
-                name: (await fileHandle.getFile()).name,
-                // We'll need to handle the file after reload through file picker API
-              }));
-              
+              sessionStorage.setItem(
+                "pendingFileHandle",
+                JSON.stringify({
+                  name: (await fileHandle.getFile()).name,
+                  // We'll need to handle the file after reload through file picker API
+                }),
+              );
+
               // Update URL and reload to apply new session
               window.history.replaceState({}, "", currentUrl.toString());
               window.location.reload();
               return;
             }
-            console.log("launchQueue - using existing session:", currentSession);
-            
+            console.log(
+              "launchQueue - using existing session:",
+              currentSession,
+            );
+
             // We have a proper session, load the file directly
             const fileHandle = launchParams.files[0] as FileSystemFileHandle;
             const file = await fileHandle.getFile();
-            const { elements, appState, files } = await loadFromBlob(file, null, null);
-            
+            const { elements, appState, files } = await loadFromBlob(
+              file,
+              null,
+              null,
+            );
+
             // Update the scene with new content and file handle
             excalidrawAPI.updateScene({
               elements: elements || [],
@@ -538,7 +563,7 @@ const ExcalidrawWrapper = () => {
                 name: file.name.replace(/\.excalidraw$/, ""),
               },
             });
-            
+
             // Add any associated files (images, etc.)
             if (files) {
               excalidrawAPI.addFiles(Object.values(files));
@@ -579,13 +604,13 @@ const ExcalidrawWrapper = () => {
       if (isTestEnv()) {
         return;
       }
-      
+
       // Skip tab sync for PWA mode to prevent content overwriting between windows
       if (isPWAMode()) {
         console.log("Skipping sync for PWA mode");
         return;
       }
-      
+
       if (
         !document.hidden &&
         ((collabAPI && !collabAPI.isCollaborating()) || isCollabDisabled)

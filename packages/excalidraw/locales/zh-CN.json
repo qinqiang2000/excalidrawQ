@@ -350,7 +350,8 @@
     "zoomToSelection": "缩放到选区",
     "toggleElementLock": "锁定/解锁",
     "movePageUpDown": "上下移动页面",
-    "movePageLeftRight": "左右移动页面"
+    "movePageLeftRight": "左右移动页面",
+    "buildTime": "构建时间：{{time}}"
   },
   "clearCanvasDialog": {
     "title": "清除画布"

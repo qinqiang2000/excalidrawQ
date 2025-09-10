@@ -57,14 +57,17 @@ const getStorageId = () => {
   if (isPWAMode()) {
     return `pwa-${getWindowId()}`;
   }
-  
+
   const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get("session") || "default";
 };
 
 const storageId = getStorageId();
 const filesStore = createStore(`files-db-${storageId}`, "files-store");
-const fileHandleStore = createStore(`fileHandle-db-${storageId}`, "fileHandle-store");
+const fileHandleStore = createStore(
+  `fileHandle-db-${storageId}`,
+  "fileHandle-store",
+);
 
 class LocalFileManager extends FileManager {
   clearObsoleteFiles = async (opts: { currentFileIds: FileId[] }) => {
@@ -132,7 +135,7 @@ export class LocalData {
             elements,
             appState,
             files,
-            appState.name || "Untitled"
+            appState.name || "Untitled",
           );
         } catch (error: any) {
           // Silent failure to avoid disrupting user experience
@@ -301,13 +304,15 @@ export class LibraryIndexedDBAdapter {
     if (isPWAMode()) {
       return `pwa-${getWindowId()}`;
     }
-    
+
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get("session") || "default";
   };
 
   private static store = createStore(
-    `${LibraryIndexedDBAdapter.idb_name}-db-${LibraryIndexedDBAdapter.getStorageId()}`,
+    `${
+      LibraryIndexedDBAdapter.idb_name
+    }-db-${LibraryIndexedDBAdapter.getStorageId()}`,
     `${LibraryIndexedDBAdapter.idb_name}-store`,
   );
 

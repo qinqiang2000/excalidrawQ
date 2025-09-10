@@ -507,6 +507,14 @@ export const HelpDialog = ({ onClose }: { onClose?: () => void }) => {
             />
           </ShortcutIsland>
         </Section>
+        <div className="HelpDialog__shortcut">
+          <div></div>
+          <div>
+            {t("helpDialog.buildTime", {
+              time: new Date(__BUILD_TIME__).toLocaleString('sv-SE').replace(',', ''),
+            })}
+          </div>
+        </div>
       </Dialog>
     </>
   );

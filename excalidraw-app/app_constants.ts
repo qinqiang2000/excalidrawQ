@@ -55,26 +55,30 @@ export const STORAGE_KEYS = {
  * Check if running in PWA mode (standalone display)
  */
 export const isPWAMode = (): boolean => {
-  return window.matchMedia('(display-mode: standalone)').matches ||
-         (window.navigator as any).standalone === true || // iOS Safari
-         document.referrer.includes('android-app://');
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as any).standalone === true || // iOS Safari
+    document.referrer.includes("android-app://")
+  );
 };
 
 /**
  * Generate or get unique window ID for PWA window isolation
  */
 export const getWindowId = (): string => {
-  const WINDOW_ID_KEY = 'excalidraw-window-id';
-  
+  const WINDOW_ID_KEY = "excalidraw-window-id";
+
   // Try to get existing window ID from sessionStorage
   let windowId = sessionStorage.getItem(WINDOW_ID_KEY);
-  
+
   if (!windowId) {
     // Generate new unique window ID
-    windowId = `window_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    windowId = `window_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 11)}`;
     sessionStorage.setItem(WINDOW_ID_KEY, windowId);
   }
-  
+
   return windowId;
 };
 
