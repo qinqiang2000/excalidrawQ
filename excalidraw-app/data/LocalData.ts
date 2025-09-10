@@ -44,14 +44,27 @@ import {
   SAVE_TO_LOCAL_STORAGE_TIMEOUT,
   STORAGE_KEYS,
   getSessionStorageKey,
+  isPWAMode,
+  getWindowId,
 } from "../app_constants";
 
 import { FileManager } from "./FileManager";
 import { Locker } from "./Locker";
 import { updateBrowserStateVersion } from "./tabSync";
 
-const filesStore = createStore("files-db", "files-store");
-const fileHandleStore = createStore("fileHandle-db", "fileHandle-store");
+// Get storage ID for IndexedDB isolation (PWA window ID or URL session)
+const getStorageId = () => {
+  if (isPWAMode()) {
+    return `pwa-${getWindowId()}`;
+  }
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get("session") || "default";
+};
+
+const storageId = getStorageId();
+const filesStore = createStore(`files-db-${storageId}`, "files-store");
+const fileHandleStore = createStore(`fileHandle-db-${storageId}`, "fileHandle-store");
 
 class LocalFileManager extends FileManager {
   clearObsoleteFiles = async (opts: { currentFileIds: FileId[] }) => {
@@ -284,8 +297,17 @@ export class LibraryIndexedDBAdapter {
   /** library data store key */
   private static key = "libraryData";
 
+  private static getStorageId = () => {
+    if (isPWAMode()) {
+      return `pwa-${getWindowId()}`;
+    }
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get("session") || "default";
+  };
+
   private static store = createStore(
-    `${LibraryIndexedDBAdapter.idb_name}-db`,
+    `${LibraryIndexedDBAdapter.idb_name}-db-${LibraryIndexedDBAdapter.getStorageId()}`,
     `${LibraryIndexedDBAdapter.idb_name}-store`,
   );
 

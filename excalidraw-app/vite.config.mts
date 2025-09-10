@@ -239,6 +239,9 @@ export default defineConfig(({ mode }) => {
               },
             },
           ],
+          launch_handler: {
+            client_mode: "navigate-new",
+          },
           share_target: {
             action: "/web-share-target",
             method: "POST",

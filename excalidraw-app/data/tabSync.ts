@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, getSessionStorageKey } from "../app_constants";
+import { STORAGE_KEYS, getSessionStorageKey, isPWAMode } from "../app_constants";
 
 // in-memory state (this tab's current state) versions. Currently just
 // timestamps of the last time the state was saved to browser storage.
@@ -36,6 +36,15 @@ export const isBrowserStorageStateNewer = (type: BrowserStateTypes) => {
 
 export const updateBrowserStateVersion = (type: BrowserStateTypes) => {
   initVersionKeys(); // Ensure keys are initialized
+  
+  // Skip updating browser state version for PWA mode to prevent cross-window content synchronization
+  if (isPWAMode()) {
+    // Only update the local in-memory version, not the shared localStorage version
+    const sessionKey = getSessionStorageKey(STORAGE_KEYS[type]);
+    LOCAL_STATE_VERSIONS[sessionKey] = Date.now();
+    return;
+  }
+  
   const timestamp = Date.now();
   const sessionKey = getSessionStorageKey(STORAGE_KEYS[type]);
   try {

@@ -52,7 +52,34 @@ export const STORAGE_KEYS = {
 } as const;
 
 /**
- * Get session-aware storage keys
+ * Check if running in PWA mode (standalone display)
+ */
+export const isPWAMode = (): boolean => {
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         (window.navigator as any).standalone === true || // iOS Safari
+         document.referrer.includes('android-app://');
+};
+
+/**
+ * Generate or get unique window ID for PWA window isolation
+ */
+export const getWindowId = (): string => {
+  const WINDOW_ID_KEY = 'excalidraw-window-id';
+  
+  // Try to get existing window ID from sessionStorage
+  let windowId = sessionStorage.getItem(WINDOW_ID_KEY);
+  
+  if (!windowId) {
+    // Generate new unique window ID
+    windowId = `window_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    sessionStorage.setItem(WINDOW_ID_KEY, windowId);
+  }
+  
+  return windowId;
+};
+
+/**
+ * Get session-aware storage keys with PWA window isolation
  * Uses a function-based approach to avoid circular dependencies
  */
 export const getSessionStorageKey = (
@@ -62,7 +89,13 @@ export const getSessionStorageKey = (
   const actualKey =
     typeof baseKey === "string" ? baseKey : STORAGE_KEYS[baseKey];
 
-  // Get session ID from URL params directly to avoid circular import
+  // If in PWA mode, use window ID for isolation
+  if (isPWAMode()) {
+    const windowId = getWindowId();
+    return `${actualKey}:pwa:${windowId}`;
+  }
+
+  // Fallback to URL-based session for browser tabs
   const urlParams = new URLSearchParams(window.location.search);
   const sessionId = urlParams.get("session");
 
