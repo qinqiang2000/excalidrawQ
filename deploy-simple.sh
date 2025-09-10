@@ -99,7 +99,7 @@ set -e
 cd $REMOTE_DIR
 
 echo "📥 拉取最新代码..."
-git pull excalidrawQ qiang
+git pull origin qiang
 
 echo "🔨 构建Docker镜像..."
 docker build -t $IMAGE_NAME .
