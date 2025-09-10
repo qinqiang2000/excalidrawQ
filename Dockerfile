@@ -2,19 +2,22 @@ FROM --platform=${BUILDPLATFORM} node:18 AS build
 
 WORKDIR /opt/node_app
 
-COPY . .
-
-# 设置npm淘宝镜像源加速依赖下载
-RUN npm config set registry https://registry.npmmirror.com
+# Copy package files first for better Docker layer caching
+COPY package.json yarn.lock ./
+COPY packages/*/package.json ./packages/*/
+COPY excalidraw-app/package.json ./excalidraw-app/
 
 # do not ignore optional dependencies:
 # Error: Cannot find module @rollup/rollup-linux-x64-gnu
-RUN --mount=type=cache,target=/root/.npm \
-    npm_config_target_arch=${TARGETARCH} npm install
+RUN --mount=type=cache,target=/root/.cache/yarn \
+    npm_config_target_arch=${TARGETARCH} yarn --network-timeout 600000
+
+# Copy source code after dependencies are installed
+COPY . .
 
 ARG NODE_ENV=production
 
-RUN npm_config_target_arch=${TARGETARCH} npm run build:app:docker
+RUN npm_config_target_arch=${TARGETARCH} yarn build:app:docker
 
 FROM --platform=${TARGETPLATFORM} nginx:1.27-alpine
 
