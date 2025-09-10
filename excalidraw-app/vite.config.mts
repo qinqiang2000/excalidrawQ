@@ -140,6 +140,8 @@ export default defineConfig(({ mode }) => {
         },
 
         workbox: {
+          skipWaiting: true,
+          clientsClaim: true,
           // don't precache fonts, locales and separate chunks
           globIgnores: [
             "fonts.css",
