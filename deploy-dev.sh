@@ -20,21 +20,30 @@ git push excalidrawQ qiang
 
 echo "🚀 部署到服务器（开发模式）..."
 ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 '
+    # 加载 nvm 环境
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+    
     cd /root/excalidrawQ
     
     echo "拉取代码..."
     git pull origin qiang
     
+    echo "检查 Node.js 版本..."
+    node --version
+    
     echo "检查依赖变化..."
     if git diff --name-only HEAD@{1} HEAD | grep -q "package.json\|yarn.lock"; then
         echo "安装依赖..."
+        cd excalidraw-app
         yarn install
+        cd ..
     else
         echo "跳过依赖安装"
     fi
     
     echo "停止现有服务..."
-    systemctl stop excalidraw || true
+    pkill -f "vite" || true
     
     echo "启动开发模式服务器..."
     # 使用 --port 参数指定端口为 3000
@@ -51,7 +60,7 @@ ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 '
         echo "端口: 3000 (通过 Caddy 代理)"
     else
         echo "❌ 启动失败，检查日志："
-        cat /var/log/excalidraw-dev.log
+        tail -20 /var/log/excalidraw-dev.log
         exit 1
     fi
 '
