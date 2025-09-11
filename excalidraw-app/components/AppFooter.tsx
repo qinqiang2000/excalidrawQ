@@ -24,17 +24,6 @@ export const AppFooter = React.memo(
           ) : (
             <EncryptedIcon />
           )}
-          <span
-            style={{
-              fontSize: ".8rem",
-              opacity: 0.7,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: ".25rem",
-            }}
-          >
-            😊 09-11 19:02
-          </span>
         </div>
       </Footer>
     );
