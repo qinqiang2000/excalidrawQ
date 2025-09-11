@@ -33,7 +33,7 @@ export const AppFooter = React.memo(
               gap: ".25rem",
             }}
           >
-            😊 09-11 21:00
+            😊 09-11 19:02
           </span>
         </div>
       </Footer>
