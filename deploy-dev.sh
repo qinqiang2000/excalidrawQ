@@ -19,7 +19,7 @@ echo "📤 推送到远程仓库..."
 git push excalidrawQ qiang
 
 echo "🚀 部署到服务器（开发模式）..."
-ssh -i ~/tools/pem/ty_sg01.pem root@43.134.26.236 '
+ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 '
     cd /root/excalidrawQ
     
     echo "拉取代码..."
