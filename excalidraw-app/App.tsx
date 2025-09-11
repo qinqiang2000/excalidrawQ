@@ -86,6 +86,7 @@ import {
   isExcalidrawPlusSignedUser,
   isPWAMode,
   SYNC_BROWSER_TABS_TIMEOUT,
+  generateUniqueSessionId,
 } from "./app_constants";
 import Collab, {
   collabAPIAtom,
@@ -511,9 +512,7 @@ const ExcalidrawWrapper = () => {
 
             if (hasContent) {
               // If current window has content, open file in a new window
-              const newSessionId = `session_${Date.now()}_${Math.random()
-                .toString(36)
-                .substring(2, 11)}`;
+              const newSessionId = generateUniqueSessionId();
               const newUrl = new URL(window.location.origin + window.location.pathname);
               newUrl.searchParams.set("session", newSessionId);
               
@@ -528,8 +527,17 @@ const ExcalidrawWrapper = () => {
               return;
             }
 
-            // If current window is empty, load the file directly here
-            console.log("launchQueue - loading file in current empty window");
+            // If current window is empty, ensure it has a unique session ID for isolation
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.get("session")) {
+              const newSessionId = generateUniqueSessionId();
+              urlParams.set("session", newSessionId);
+              const newUrl = `${window.location.pathname}?${urlParams.toString()}${window.location.hash}`;
+              window.history.replaceState({}, "", newUrl);
+              console.log("launchQueue - assigned unique session to current window:", newSessionId);
+            }
+
+            console.log("launchQueue - loading file in current window with isolated storage");
             
             const fileHandle = launchParams.files[0] as FileSystemFileHandle;
             const file = await fileHandle.getFile();

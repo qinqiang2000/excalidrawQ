@@ -1,7 +1,7 @@
 {
   "type": "excalidraw",
   "version": 2,
-  "source": "http://localhost:5002",
+  "source": "http://localhost:3000",
   "elements": [
     {
       "id": "test1",
@@ -92,7 +92,7 @@
       "version": 3,
       "versionNonce": 1683541819,
       "isDeleted": false,
-      "boundElements": null,
+      "boundElements": [],
       "updated": 1757499186117,
       "link": null,
       "locked": false,
@@ -129,7 +129,7 @@
       "version": 3,
       "versionNonce": 883082395,
       "isDeleted": false,
-      "boundElements": null,
+      "boundElements": [],
       "updated": 1757499212039,
       "link": null,
       "locked": false,

@@ -90,9 +90,20 @@ export class SessionManager {
    * - User opening from a link that should be independent (create new)
    */
   private shouldCreateNewSession(): boolean {
-    // For now, always use default session if no session param
-    // This maintains backward compatibility
-    // In future, could add logic to detect certain scenarios where new session is preferred
+    // Check if this window was opened via launchQueue (file associations)
+    const referrer = document.referrer;
+    const windowName = window.name;
+    
+    // If opened from OS file association, drag-and-drop, or as a new window, create new session
+    if (!referrer || windowName.includes("_blank") || window.opener) {
+      return true;
+    }
+    
+    // Check if there's a pending file operation
+    if (sessionStorage.getItem("pendingFileHandle")) {
+      return true;
+    }
+    
     return false;
   }
 

@@ -83,6 +83,39 @@ export const getWindowId = (): string => {
 };
 
 /**
+ * Generate a unique session ID for new windows
+ */
+export const generateUniqueSessionId = (): string => {
+  return `session_${Date.now()}_${Math.random()
+    .toString(36)
+    .substring(2, 11)}`;
+};
+
+/**
+ * Determine if a new session should be created
+ * This detects scenarios where content should be isolated
+ */
+export const shouldCreateNewSession = (): boolean => {
+  // Check if this window was opened via launchQueue (file associations)
+  // This is indicated by the presence of certain referrer patterns or window.name
+  const referrer = document.referrer;
+  const windowName = window.name;
+  
+  // If opened from OS file association or drag-and-drop, create new session
+  if (!referrer || windowName.includes("_blank") || window.opener) {
+    return true;
+  }
+  
+  // Check if there's a pending file operation in sessionStorage
+  // This indicates the window was opened specifically to handle a file
+  if (sessionStorage.getItem("pendingFileHandle")) {
+    return true;
+  }
+  
+  return false;
+};
+
+/**
  * Get session-aware storage keys with PWA window isolation
  * Uses a function-based approach to avoid circular dependencies
  */
@@ -99,11 +132,28 @@ export const getSessionStorageKey = (
     return `${actualKey}:pwa:${windowId}`;
   }
 
-  // Fallback to URL-based session for browser tabs
+  // For browser tabs, check if we need to create a new session
   const urlParams = new URLSearchParams(window.location.search);
-  const sessionId = urlParams.get("session");
+  let sessionId = urlParams.get("session");
 
-  if (!sessionId || sessionId === "default") {
+  // If no session parameter and this is a new window, create one
+  if (!sessionId) {
+    // Check if this is a new window that should have its own session
+    // This happens when opening files via launchQueue or file associations
+    const isNewWindow = shouldCreateNewSession();
+    
+    if (isNewWindow) {
+      sessionId = generateUniqueSessionId();
+      // Update the URL to include the new session ID
+      urlParams.set("session", sessionId);
+      const newUrl = `${window.location.pathname}?${urlParams.toString()}${window.location.hash}`;
+      window.history.replaceState({}, "", newUrl);
+    } else {
+      sessionId = "default";
+    }
+  }
+
+  if (sessionId === "default") {
     return actualKey; // Backward compatibility for default session
   }
 
