@@ -48,7 +48,7 @@ ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 << 'EOF'
     
     # 启动开发服务器
     echo "启动开发服务器..."
-    PORT=3000 nohup yarn start --host 0.0.0.0 > /var/log/excalidraw-dev.log 2>&1 &
+    VITE_APP_ENABLE_PWA=true PORT=3000 nohup yarn start --host 0.0.0.0 > /var/log/excalidraw-dev.log 2>&1 &
     
     # 等待启动
     sleep 10
