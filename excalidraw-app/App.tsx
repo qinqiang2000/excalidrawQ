@@ -503,49 +503,34 @@ const ExcalidrawWrapper = () => {
         );
         if (launchParams.files && launchParams.files.length > 0) {
           try {
-            const currentUrl = new URL(window.location.href);
-            const currentSession = currentUrl.searchParams.get("session");
-            console.log(
-              "launchQueue - current URL:",
-              window.location.href,
-              "session:",
-              currentSession,
-            );
+            // Check if current window has content (elements) that would be overwritten
+            const currentElements = excalidrawAPI.getSceneElementsIncludingDeleted();
+            const hasContent = currentElements && currentElements.length > 0;
+            
+            console.log("launchQueue - current window has content:", hasContent);
 
-            // If we don't have a unique session, generate one and reload
-            if (!currentSession || currentSession === "default") {
+            if (hasContent) {
+              // If current window has content, open file in a new window
               const newSessionId = `session_${Date.now()}_${Math.random()
                 .toString(36)
                 .substring(2, 11)}`;
-              currentUrl.searchParams.set("session", newSessionId);
+              const newUrl = new URL(window.location.origin + window.location.pathname);
+              newUrl.searchParams.set("session", newSessionId);
+              
               console.log(
-                "launchQueue - generating new session:",
-                newSessionId,
-                "new URL:",
-                currentUrl.toString(),
+                "launchQueue - opening file in new window to preserve current content"
               );
-
-              // Store the file handle for after reload
-              const fileHandle = launchParams.files[0] as FileSystemFileHandle;
-              sessionStorage.setItem(
-                "pendingFileHandle",
-                JSON.stringify({
-                  name: (await fileHandle.getFile()).name,
-                  // We'll need to handle the file after reload through file picker API
-                }),
-              );
-
-              // Update URL and reload to apply new session
-              window.history.replaceState({}, "", currentUrl.toString());
-              window.location.reload();
+              
+              window.open(newUrl.toString(), "_blank");
+              
+              // The new window will also get the launchQueue event and handle the file
+              // since it's the same application instance
               return;
             }
-            console.log(
-              "launchQueue - using existing session:",
-              currentSession,
-            );
 
-            // We have a proper session, load the file directly
+            // If current window is empty, load the file directly here
+            console.log("launchQueue - loading file in current empty window");
+            
             const fileHandle = launchParams.files[0] as FileSystemFileHandle;
             const file = await fileHandle.getFile();
             const { elements, appState, files } = await loadFromBlob(
@@ -568,6 +553,7 @@ const ExcalidrawWrapper = () => {
             if (files) {
               excalidrawAPI.addFiles(Object.values(files));
             }
+            
           } catch (error) {
             console.error("Failed to handle launched file:", error);
           }
