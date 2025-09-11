@@ -19,51 +19,54 @@ echo "📤 推送到远程仓库..."
 git push excalidrawQ qiang
 
 echo "🚀 部署到服务器（开发模式）..."
-ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 '
-    # 加载 nvm 环境
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'bash -l -c "
+    # 确保使用 Node.js 22
+    export NVM_DIR=\"\$HOME/.nvm\"
+    [ -s \"\$NVM_DIR/nvm.sh\" ] && source \"\$NVM_DIR/nvm.sh\"
+    nvm use 22
     
     cd /root/excalidrawQ
     
-    echo "拉取代码..."
+    echo \"拉取代码...\"
     git pull origin qiang
     
-    echo "检查 Node.js 版本..."
+    echo \"检查 Node.js 版本...\"
     node --version
     
-    echo "检查依赖变化..."
-    if git diff --name-only HEAD@{1} HEAD | grep -q "package.json\|yarn.lock"; then
-        echo "安装依赖..."
+    echo \"检查依赖变化...\"
+    if git diff --name-only HEAD@{1} HEAD | grep -q \"package.json\\\\|yarn.lock\"; then
+        echo \"安装依赖...\"
         cd excalidraw-app
         yarn install
         cd ..
     else
-        echo "跳过依赖安装"
+        echo \"跳过依赖安装\"
     fi
     
-    echo "停止现有服务..."
-    pkill -f "vite" || true
+    echo \"停止现有服务...\"
+    pkill -f \"vite\" || true
     
-    echo "启动开发模式服务器..."
-    # 使用 --port 参数指定端口为 3000
+    echo \"清理日志文件...\"
+    > /var/log/excalidraw-dev.log
+    
+    echo \"启动开发模式服务器...\"
     cd excalidraw-app
     VITE_APP_ENABLE_PWA=true PORT=3000 nohup yarn start > /var/log/excalidraw-dev.log 2>&1 &
     cd ..
     
     # 等待服务启动
-    sleep 5
+    sleep 8
     
     # 检查是否成功启动
-    if pgrep -f "vite" > /dev/null; then
-        echo "✅ 开发服务器启动成功！"
-        echo "端口: 3000 (通过 Caddy 代理)"
+    if pgrep -f \"vite\" > /dev/null; then
+        echo \"✅ 开发服务器启动成功！\"
+        echo \"端口: 3000 (通过 Caddy 代理)\"
     else
-        echo "❌ 启动失败，检查日志："
+        echo \"❌ 启动失败，检查日志：\"
         tail -20 /var/log/excalidraw-dev.log
         exit 1
     fi
-'
+"'
 
 echo
 echo "🎉 部署完成！"
