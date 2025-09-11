@@ -38,6 +38,7 @@
       {
         "allowReferrer": true
       }
-    ]
+    ],
+    "no-console": "off"
   }
 }
