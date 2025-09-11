@@ -511,7 +511,9 @@ export const HelpDialog = ({ onClose }: { onClose?: () => void }) => {
           <div></div>
           <div>
             {t("helpDialog.buildTime", {
-              time: new Date(__BUILD_TIME__).toLocaleString('sv-SE').replace(',', ''),
+              time: new Date(__BUILD_TIME__)
+                .toLocaleString("sv-SE")
+                .replace(",", ""),
             })}
           </div>
         </div>

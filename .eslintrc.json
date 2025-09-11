@@ -1,5 +1,23 @@
 {
   "extends": ["@excalidraw/eslint-config", "react-app"],
+  "overrides": [
+    {
+      "files": ["**/sw.js", "**/service-worker.js", "**/workbox-*.js"],
+      "env": {
+        "serviceworker": true,
+        "browser": true
+      },
+      "globals": {
+        "importScripts": "readonly",
+        "define": "readonly",
+        "self": "writable"
+      },
+      "rules": {
+        "import/no-amd": "off",
+        "no-undef": "off"
+      }
+    }
+  ],
   "rules": {
     "import/order": [
       "warn",
