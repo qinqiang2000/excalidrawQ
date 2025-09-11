@@ -51,7 +51,7 @@ ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'bash -l -c "
     
     echo \"启动开发模式服务器...\"
     cd excalidraw-app
-    VITE_APP_ENABLE_PWA=true PORT=3000 nohup yarn start > /var/log/excalidraw-dev.log 2>&1 &
+    VITE_APP_ENABLE_PWA=true PORT=3000 nohup yarn start --host 0.0.0.0 > /var/log/excalidraw-dev.log 2>&1 &
     cd ..
     
     # 等待服务启动
