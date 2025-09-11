@@ -67,7 +67,7 @@ check_local_changes() {
 # 推送代码到远程仓库
 push_code() {
     print_info "推送代码到远程仓库..."
-    git push origin qiang
+    git push excalidrawQ qiang
     print_success "代码推送完成"
 }
 
@@ -84,8 +84,13 @@ deploy_to_server() {
         echo '拉取最新代码...'
         git pull origin qiang
         
-        echo '安装依赖...'
-        yarn install
+        # 检查 package.json 或 yarn.lock 是否有变化
+        if git diff --name-only HEAD@{1} HEAD | grep -q 'package.json\|yarn.lock'; then
+            echo '检测到依赖变更，安装依赖...'
+            yarn install
+        else
+            echo '依赖无变化，跳过安装'
+        fi
         
         echo '构建项目...'
         yarn build
