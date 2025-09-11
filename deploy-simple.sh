@@ -98,20 +98,31 @@ set -e
 # 进入项目目录
 cd $REMOTE_DIR
 
+echo "⏰ 部署开始: \$(date '+%H:%M:%S')"
 echo "📥 拉取最新代码..."
 git pull origin qiang
 
 echo "🔨 构建Docker镜像（预计3-8分钟）..."
 echo "⏳ 正在下载依赖和编译代码，请耐心等待..."
 echo "📊 如果超过10分钟无响应，可按Ctrl+C取消"
+echo "💡 提示：使用 ./deploy-fast.sh 可获得更快的部署速度"
 
-# 设置Docker构建超时为600秒（10分钟）
-timeout 600 docker build -t $IMAGE_NAME . || {
+# 启用Docker BuildKit和缓存优化
+export DOCKER_BUILDKIT=1
+
+# 设置Docker构建超时为600秒（10分钟），使用缓存优化
+echo "⏰ 构建开始: \$(date '+%H:%M:%S')"
+timeout 600 docker build \\
+    --build-arg BUILDKIT_INLINE_CACHE=1 \\
+    --cache-from \$IMAGE_NAME:latest \\
+    -t \$IMAGE_NAME:latest \\
+    . || {
     echo "❌ Docker构建超时或失败"
     echo "💡 可能原因：网络慢、服务器资源不足"
-    echo "🔄 建议：稍后重试或检查服务器资源"
+    echo "🔄 建议：稍后重试或使用 ./deploy-fast.sh 快速部署"
     exit 1
 }
+echo "⏰ 构建完成: \$(date '+%H:%M:%S')"
 
 echo "🔄 重启容器..."
 # 停止并删除旧容器
@@ -123,6 +134,7 @@ if docker ps -a -q -f name=$CONTAINER_NAME | grep -q .; then
 fi
 
 # 启动新容器
+echo "⏰ 容器启动: \$(date '+%H:%M:%S')"
 docker run -d \
     --name $CONTAINER_NAME \
     -p 3000:80 \
@@ -145,7 +157,8 @@ fi
 # 清理未使用的镜像（可选）
 docker image prune -f
 
-echo "🎉 部署完成！"
+echo "⏰ 部署完成: \$(date '+%H:%M:%S')"
+echo "🎉 部署成功！"
 EOF
     
     if [ $? -eq 0 ]; then
