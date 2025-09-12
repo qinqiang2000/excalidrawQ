@@ -121,6 +121,48 @@ const saveDataStateToLocalStorage = (
 type SavingLockTypes = "collaboration";
 
 export class LocalData {
+  // Content hash cache to prevent unnecessary saves
+  private static lastSavedContentHash: string | null = null;
+  private static lastFileContentHash: string | null = null;
+
+  // Simple hash function for content comparison
+  private static hashContent(
+    elements: readonly ExcalidrawElement[],
+    appState: AppState,
+    files: BinaryFiles,
+  ): string {
+    // Create a simplified representation for hashing
+    const contentToHash = {
+      elements: elements.map((el) => ({
+        id: el.id,
+        type: el.type,
+        x: el.x,
+        y: el.y,
+        width: el.width,
+        height: el.height,
+        isDeleted: el.isDeleted,
+        // Include other properties that affect content
+        ...("text" in el && { text: el.text }),
+        ...("fileId" in el && { fileId: el.fileId }),
+      })),
+      appState: {
+        name: appState.name,
+        fileHandle: appState.fileHandle ? "has_file" : null,
+        // Add other relevant appState properties
+      },
+      fileIds: Object.keys(files).sort(),
+    };
+
+    // Simple hash using JSON stringify and basic hash function
+    const str = JSON.stringify(contentToHash);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash.toString();
+  }
   // Auto-save to associated file with longer debounce to avoid frequent file writes
   private static _saveToFile = debounce(
     async (
@@ -130,6 +172,14 @@ export class LocalData {
     ) => {
       // Only auto-save to file if we have a fileHandle and it's not an image file
       if (appState.fileHandle && !isImageFileHandle(appState.fileHandle)) {
+        // Calculate current content hash for file saving
+        const currentFileHash = this.hashContent(elements, appState, files);
+
+        // Skip saving if content hasn't changed
+        if (this.lastFileContentHash === currentFileHash) {
+          return;
+        }
+
         try {
           await saveAsJSON(
             elements,
@@ -137,6 +187,8 @@ export class LocalData {
             files,
             appState.name || "Untitled",
           );
+          // Update file content hash after successful save
+          this.lastFileContentHash = currentFileHash;
         } catch (error: any) {
           // Silent failure to avoid disrupting user experience
           // Only log to console for debugging
@@ -154,6 +206,15 @@ export class LocalData {
       files: BinaryFiles,
       onFilesSaved: () => void,
     ) => {
+      // Calculate current content hash
+      const currentHash = this.hashContent(elements, appState, files);
+
+      // Skip saving if content hasn't changed
+      if (this.lastSavedContentHash === currentHash) {
+        onFilesSaved(); // Still call callback to maintain expected behavior
+        return;
+      }
+
       saveDataStateToLocalStorage(elements, appState);
 
       // Save FileHandle to IndexedDB separately since it can't be JSON serialized
@@ -166,6 +227,10 @@ export class LocalData {
         elements,
         files,
       });
+
+      // Update content hash after successful save
+      this.lastSavedContentHash = currentHash;
+
       onFilesSaved();
     },
     SAVE_TO_LOCAL_STORAGE_TIMEOUT,
