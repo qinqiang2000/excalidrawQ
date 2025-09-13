@@ -132,7 +132,7 @@ deploy_production() {
         
         # 构建生产版本（极简内存优化模式）
         echo "构建生产版本（极简内存优化模式）..."
-        export NODE_OPTIONS="--max-old-space-size=1024 --gc-interval=100"
+        export NODE_OPTIONS="--max-old-space-size=1024"
         export VITE_DISABLE_SOURCEMAP=true
         
         # 设置系统级内存限制
@@ -147,16 +147,16 @@ deploy_production() {
             sleep 5
             
             # 第二次尝试：使用极简配置
-            export NODE_OPTIONS="--max-old-space-size=768 --gc-interval=50"
-            timeout 900 vite build --config vite.config.minimal.mts || {
+            export NODE_OPTIONS="--max-old-space-size=768"
+            timeout 900 npx vite build --config vite.config.minimal.mts || {
                 echo "❌ 极简配置也失败，尝试最后的降级方案..."
                 
                 # 最后尝试：完全禁用并行处理
                 sync && echo 3 > /proc/sys/vm/drop_caches
-                export NODE_OPTIONS="--max-old-space-size=512 --gc-interval=25"
+                export NODE_OPTIONS="--max-old-space-size=512"
                 export VITE_BUILD_PARALLEL=false
                 
-                timeout 1200 vite build --config vite.config.minimal.mts || {
+                timeout 1200 npx vite build --config vite.config.minimal.mts || {
                     echo "❌ 所有构建方案都失败了"
                     echo "建议：1. 升级服务器内存到8GB，或 2. 使用本地构建方案"
                     exit 1
