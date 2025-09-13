@@ -8,7 +8,7 @@
 - **域名**: excalidrawx.duckdns.org
 - **HTTPS**: 通过 Caddy 自动管理
 - **前端服务**: http-server (生产) / Vite dev server (开发)
-- **后端服务**: Excalidraw Complete (分享和协作)
+- **后端服务**: 自定义存储后端 (分享功能)
 
 ### 完整部署架构
 
@@ -17,13 +17,12 @@
     ↓ HTTPS:443
 [Caddy 反向代理]
     ├─ HTTP:3000 → [前端服务]
-    ├─ HTTP:3002 → [Excalidraw Complete 后端]
-    └─ WebSocket → [实时协作]
+    └─ HTTP:3002 → [自定义存储后端]
     ↓
 [分离存储]
 ├── 代码文件 (/root/excalidraw-app-build)
 ├── 字体文件 (/root/excalidraw-fonts)
-└── 分享数据 (/root/excalidraw-data/storage.db)
+└── 分享数据 (内存存储)
 ```
 
 **架构优势**:
@@ -31,7 +30,7 @@
 - ✅ 代码文件快速增量部署
 - ✅ 本地构建，减轻服务器压力
 - ✅ 灵活的开发/生产环境切换
-- ✅ 完全独立的分享和协作功能
+- ✅ 完全独立的分享功能
 - ✅ 自动 HTTPS 证书管理
 
 ## 🚀 部署方式
@@ -62,13 +61,7 @@
 # 1. 首次需要上传字体文件
 ./upload-fonts.sh
 
-# 2. 设置分享功能后端
-./setup-backend.sh
-
-# 3. 更新 Caddy 配置
-./update-caddy.sh
-
-# 4. 然后进行正常部署
+# 2. 然后进行正常部署（存储后端已自动部署）
 ./deploy-prod.sh p "initial deployment with sharing support"
 ```
 
@@ -76,23 +69,28 @@
 
 ### 架构说明
 
-使用 **Excalidraw Complete** 实现独立分享和协作：
-- SQLite 本地存储分享数据
-- WebSocket 实时协作
+使用 **自定义 Express.js 后端** 实现独立分享功能：
+- 内存存储分享数据（重启会丢失）
 - Caddy 处理路由和 CORS
+- 完全独立，不依赖第三方服务
 
 ### 关键文件
 
 - `.env.local` - 环境配置（指向自己的后端）
-- `setup-backend.sh` - 后端服务安装
-- `update-caddy.sh` - Caddy 配置更新
+- `storage-backend/` - 自定义存储后端代码
 - `update-domain.sh` - 域名快速更换
 
 ### 服务管理
 
 ```bash
 # 后端状态
-ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'systemctl status excalidraw-backend'
+ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'systemctl status excalidraw-storage'
+
+# 重启后端
+ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'systemctl restart excalidraw-storage'
+
+# 查看存储统计
+curl -s https://excalidrawx.duckdns.org/storage-backend/api/v2/stats
 
 # 更换域名
 ./update-domain.sh new-domain.com && ./deploy-prod.sh p "update domain"
@@ -309,16 +307,17 @@ ls -la /root/excalidraw-app-build/fonts
 
 ```bash
 # 检查后端服务
-ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'systemctl status excalidraw-backend'
+ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'systemctl status excalidraw-storage'
 
-# 检查存储目录
-ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'ls -la /root/excalidraw-data/'
+# 查看后端日志
+ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'journalctl -u excalidraw-storage -f'
 
 # 检查 Caddy 配置
 ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'caddy validate --config /etc/caddy/Caddyfile'
 
 # 测试后端 API
-curl -I https://excalidrawx.duckdns.org/storage-backend/api/v2/
+curl -s https://excalidrawx.duckdns.org/storage-backend/
+curl -s https://excalidrawx.duckdns.org/storage-backend/api/v2/stats
 ```
 
 ### 日志分析
