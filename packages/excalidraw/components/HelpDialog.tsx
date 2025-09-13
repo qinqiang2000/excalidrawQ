@@ -510,6 +510,7 @@ export const HelpDialog = ({ onClose }: { onClose?: () => void }) => {
         <div className="HelpDialog__shortcut">
           <div></div>
           <div>
+            hello world
             {t("helpDialog.buildTime", {
               time: new Date(__BUILD_TIME__)
                 .toLocaleString("sv-SE")
