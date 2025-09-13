@@ -115,13 +115,16 @@ deploy_on_server() {
         fi
         
         # 创建部署目录
-        mkdir -p /root/excalidraw-app-build
-        
+        mkdir -p /var/www/excalidraw
+
         # 解压新的代码文件
         echo "解压新代码文件..."
-        cd /root/excalidraw-app-build
+        cd /var/www/excalidraw
         tar -xzf /tmp/excalidraw-code.tar.gz
-        
+
+        # 设置正确的权限
+        chown -R caddy:caddy /var/www/excalidraw
+
         # 创建字体目录链接 (如果不存在)
         if [ ! -L "fonts" ] && [ -d "/root/excalidraw-fonts" ]; then
             ln -s /root/excalidraw-fonts fonts
@@ -132,7 +135,7 @@ deploy_on_server() {
         cd /root/excalidrawQ/excalidraw-app
         if [ ! -L "build" ]; then
             rm -rf build
-            ln -s /root/excalidraw-app-build build
+            ln -s /var/www/excalidraw build
             echo "✅ 创建构建目录链接"
         fi
         
