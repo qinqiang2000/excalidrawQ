@@ -130,21 +130,37 @@ deploy_production() {
         echo "检查并安装依赖..."
         yarn install
         
-        # 构建生产版本（优化内存使用）
-        echo "构建生产版本（内存优化模式）..."
-        export NODE_OPTIONS="--max-old-space-size=2048"
+        # 构建生产版本（极简内存优化模式）
+        echo "构建生产版本（极简内存优化模式）..."
+        export NODE_OPTIONS="--max-old-space-size=1024 --gc-interval=100"
         export VITE_DISABLE_SOURCEMAP=true
         
-        # 使用超时控制构建过程，并使用优化配置
-        timeout 600 yarn build:app:docker || {
-            echo "❌ 构建超时或失败，尝试使用优化配置重新构建..."
-            # 再次清理内存
+        # 设置系统级内存限制
+        ulimit -v 2097152  # 限制虚拟内存为 2GB
+        
+        # 第一次尝试：使用标准配置但极低内存限制
+        timeout 900 yarn build:app:docker || {
+            echo "❌ 标准构建失败，使用极简配置重试..."
+            
+            # 强制垃圾回收和内存清理
             sync && echo 3 > /proc/sys/vm/drop_caches
-            # 降低内存限制重试，使用生产优化配置
-            export NODE_OPTIONS="--max-old-space-size=1536"
-            timeout 600 vite build --config vite.config.prod.mts || {
-                echo "❌ 优化配置构建也失败，请考虑重启服务器或升级内存"
-                exit 1
+            sleep 5
+            
+            # 第二次尝试：使用极简配置
+            export NODE_OPTIONS="--max-old-space-size=768 --gc-interval=50"
+            timeout 900 vite build --config vite.config.minimal.mts || {
+                echo "❌ 极简配置也失败，尝试最后的降级方案..."
+                
+                # 最后尝试：完全禁用并行处理
+                sync && echo 3 > /proc/sys/vm/drop_caches
+                export NODE_OPTIONS="--max-old-space-size=512 --gc-interval=25"
+                export VITE_BUILD_PARALLEL=false
+                
+                timeout 1200 vite build --config vite.config.minimal.mts || {
+                    echo "❌ 所有构建方案都失败了"
+                    echo "建议：1. 升级服务器内存到8GB，或 2. 使用本地构建方案"
+                    exit 1
+                }
             }
         }
         
