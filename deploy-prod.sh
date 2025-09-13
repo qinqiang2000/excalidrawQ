@@ -103,6 +103,16 @@ deploy_on_server() {
         pkill -f "http-server" || true
         pkill -f "vite" || true
         sleep 2
+
+        # 检查并启动后端服务
+        echo "检查分享功能后端服务..."
+        if ! systemctl is-active excalidraw-backend > /dev/null 2>&1; then
+            echo "启动 Excalidraw Complete 后端..."
+            systemctl start excalidraw-backend
+            sleep 3
+        else
+            echo "✅ 后端服务已运行"
+        fi
         
         # 创建部署目录
         mkdir -p /root/excalidraw-app-build
@@ -133,21 +143,49 @@ deploy_on_server() {
         # 等待启动
         sleep 5
         
-        # 检查状态
+        # 检查服务状态
+        echo "🔍 检查所有服务状态..."
+        FRONTEND_OK=false
+        BACKEND_OK=false
+
+        # 检查前端服务
         if pgrep -f "http-server" > /dev/null; then
-            echo "✅ 生产服务器启动成功！"
-            echo "检查端口监听..."
-            netstat -tuln | grep 3000 && echo "端口 3000 正在监听" || echo "端口 3000 未监听，但进程运行中"
-            
-            echo "服务器内存状态："
-            free -h
-            
-            # 清理临时文件
-            rm -f /tmp/excalidraw-code.tar.gz
+            echo "✅ 前端服务器启动成功！"
+            netstat -tuln | grep 3000 && echo "✅ 端口 3000 正在监听" || echo "⚠️ 端口 3000 未监听"
+            FRONTEND_OK=true
         else
-            echo "❌ 启动失败！"
+            echo "❌ 前端服务启动失败！"
             echo "错误日志："
-            cat /var/log/excalidraw-prod.log
+            tail -20 /var/log/excalidraw-prod.log
+        fi
+
+        # 检查后端服务
+        if systemctl is-active excalidraw-backend > /dev/null 2>&1; then
+            echo "✅ 后端服务运行正常！"
+            netstat -tuln | grep 3002 && echo "✅ 端口 3002 正在监听" || echo "⚠️ 端口 3002 未监听"
+            BACKEND_OK=true
+        else
+            echo "❌ 后端服务未运行！"
+            systemctl status excalidraw-backend --no-pager -l
+        fi
+
+        # 显示系统状态
+        echo "📊 服务器状态："
+        free -h
+
+        # 清理临时文件
+        rm -f /tmp/excalidraw-code.tar.gz
+
+        # 检查总体状态
+        if [ "$FRONTEND_OK" = true ] && [ "$BACKEND_OK" = true ]; then
+            echo "🎉 所有服务启动成功！"
+            echo "🌐 访问地址: https://excalidrawx.duckdns.org"
+            echo "🔗 分享功能已启用"
+        elif [ "$FRONTEND_OK" = true ]; then
+            echo "⚠️ 前端正常，但后端服务异常（分享功能可能不可用）"
+            exit 1
+        else
+            echo "❌ 部署失败！"
             exit 1
         fi
 EOF

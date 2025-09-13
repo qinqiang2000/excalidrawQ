@@ -6,21 +6,24 @@
 
 - **服务器**: 129.226.88.226 (腾讯云)
 - **域名**: excalidrawx.duckdns.org
-- **HTTPS**: 通过反向代理配置
-- **服务器**: http-server (生产) / Vite dev server (开发)
+- **HTTPS**: 通过 Caddy 自动管理
+- **前端服务**: http-server (生产) / Vite dev server (开发)
+- **后端服务**: Excalidraw Complete (分享和协作)
 
-### 分离式部署架构
+### 完整部署架构
 
 ```
 [用户浏览器]
     ↓ HTTPS:443
-[反向代理]
-    ↓ HTTP:3000
-[http-server/Vite]
+[Caddy 反向代理]
+    ├─ HTTP:3000 → [前端服务]
+    ├─ HTTP:3002 → [Excalidraw Complete 后端]
+    └─ WebSocket → [实时协作]
     ↓
 [分离存储]
 ├── 代码文件 (/root/excalidraw-app-build)
-└── 字体文件 (/root/excalidraw-fonts)
+├── 字体文件 (/root/excalidraw-fonts)
+└── 分享数据 (/root/excalidraw-data/storage.db)
 ```
 
 **架构优势**:
@@ -28,6 +31,8 @@
 - ✅ 代码文件快速增量部署
 - ✅ 本地构建，减轻服务器压力
 - ✅ 灵活的开发/生产环境切换
+- ✅ 完全独立的分享和协作功能
+- ✅ 自动 HTTPS 证书管理
 
 ## 🚀 部署方式
 
@@ -57,8 +62,40 @@
 # 1. 首次需要上传字体文件
 ./upload-fonts.sh
 
-# 2. 然后进行正常部署
-./deploy-prod.sh p "initial deployment"
+# 2. 设置分享功能后端
+./setup-backend.sh
+
+# 3. 更新 Caddy 配置
+./update-caddy.sh
+
+# 4. 然后进行正常部署
+./deploy-prod.sh p "initial deployment with sharing support"
+```
+
+## 🔗 分享功能配置
+
+### 架构说明
+
+使用 **Excalidraw Complete** 实现独立分享和协作：
+- SQLite 本地存储分享数据
+- WebSocket 实时协作
+- Caddy 处理路由和 CORS
+
+### 关键文件
+
+- `.env.local` - 环境配置（指向自己的后端）
+- `setup-backend.sh` - 后端服务安装
+- `update-caddy.sh` - Caddy 配置更新
+- `update-domain.sh` - 域名快速更换
+
+### 服务管理
+
+```bash
+# 后端状态
+ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'systemctl status excalidraw-backend'
+
+# 更换域名
+./update-domain.sh new-domain.com && ./deploy-prod.sh p "update domain"
 ```
 
 ## 📝 部署流程说明
@@ -266,6 +303,22 @@ ls -la /root/excalidraw-app-build/fonts
 
 # 重新上传字体
 ./upload-fonts.sh
+```
+
+**6. 分享功能失败**
+
+```bash
+# 检查后端服务
+ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'systemctl status excalidraw-backend'
+
+# 检查存储目录
+ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'ls -la /root/excalidraw-data/'
+
+# 检查 Caddy 配置
+ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'caddy validate --config /etc/caddy/Caddyfile'
+
+# 测试后端 API
+curl -I https://excalidrawx.duckdns.org/storage-backend/api/v2/
 ```
 
 ### 日志分析
