@@ -29,11 +29,12 @@ const healthCheck = (req, res) => {
   });
 };
 
-app.get('/', healthCheck);  // 根路径（来自 Caddy 的 /storage-backend/）
+app.get('/', healthCheck);  // 根路径
+app.get('/storage-backend/', healthCheck);  // Caddy 转发路径
 app.get('/api/v2/', healthCheck);  // 原始 API 路径
 
-// POST /api/v2/post/ - 保存画板数据（Excalidraw 分享功能使用的端点）
-app.post('/api/v2/post/', (req, res) => {
+// POST 保存画板数据 - 支持多个路径
+const saveScene = (req, res) => {
   try {
     const id = uuidv4();
     const data = {
@@ -63,10 +64,14 @@ app.post('/api/v2/post/', (req, res) => {
       message: error.message
     });
   }
-});
+};
 
-// GET /api/v2/:id - 获取画板数据
-app.get('/api/v2/:id', (req, res) => {
+// POST /api/v2/post/ - 保存画板数据（Excalidraw 分享功能使用的端点）
+app.post('/api/v2/post/', saveScene);
+app.post('/storage-backend/api/v2/post/', saveScene);  // Caddy 转发路径
+
+// GET 获取画板数据 - 支持多个路径
+const getScene = (req, res) => {
   try {
     const { id } = req.params;
     const data = storage.get(id);
@@ -93,7 +98,11 @@ app.get('/api/v2/:id', (req, res) => {
       message: error.message
     });
   }
-});
+};
+
+// GET /api/v2/:id - 获取画板数据
+app.get('/api/v2/:id', getScene);
+app.get('/storage-backend/api/v2/:id', getScene);  // Caddy 转发路径
 
 // 获取存储统计信息（调试用）
 app.get('/api/v2/stats', (req, res) => {
