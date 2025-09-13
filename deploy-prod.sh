@@ -3,22 +3,34 @@
 # Excalidraw 快速代码部署脚本 (不含字体文件)
 set -e
 
-# 检查部署模式
-PRODUCTION_MODE=false
+# 解析命令行参数
+FORCE_BUILD=false
+SKIP_BUILD=false
 COMMIT_MESSAGE=""
 
-if [ "$1" = "p" ]; then
-    PRODUCTION_MODE=true
-    COMMIT_MESSAGE="$2"
-    echo "========================================"
-    echo "     Excalidraw 快速生产部署"
-    echo "========================================"
-else
-    COMMIT_MESSAGE="$1"
-    echo "========================================"
-    echo "     Excalidraw 快速开发部署"
-    echo "========================================"
-fi
+# 解析参数
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -f|--force)
+            FORCE_BUILD=true
+            shift
+            ;;
+        --skip-build)
+            SKIP_BUILD=true
+            shift
+            ;;
+        *)
+            if [ -z "$COMMIT_MESSAGE" ]; then
+                COMMIT_MESSAGE="$1"
+            fi
+            shift
+            ;;
+    esac
+done
+
+echo "========================================"
+echo "     Excalidraw 智能部署"
+echo "========================================"
 
 # 如果有提交信息，提交代码
 if [ -n "$COMMIT_MESSAGE" ]; then
@@ -30,30 +42,103 @@ fi
 echo "📤 推送到远程仓库..."
 git push excalidrawQ qiang
 
+# 检查是否需要重新构建
+need_rebuild() {
+    # 如果指定跳过构建
+    if [ "$SKIP_BUILD" = true ]; then
+        echo "⏭️ 跳过构建步骤"
+        return 1
+    fi
+
+    # 如果强制重新构建
+    if [ "$FORCE_BUILD" = true ]; then
+        echo "🔄 强制重新构建"
+        return 0
+    fi
+
+    # 检查 build 目录是否存在
+    if [ ! -d "excalidraw-app/build" ]; then
+        echo "📁 build 目录不存在，需要构建"
+        return 0
+    fi
+
+    # 检查构建状态文件
+    if [ ! -f ".build-state" ]; then
+        echo "📄 构建状态文件不存在，需要构建"
+        return 0
+    fi
+
+    # 获取当前 git commit
+    local current_commit=$(git rev-parse HEAD)
+    local last_commit=$(cat .build-state 2>/dev/null | grep "lastCommit" | cut -d'"' -f4)
+
+    # 如果 commit 不同，需要重新构建
+    if [ "$current_commit" != "$last_commit" ]; then
+        echo "🔍 代码有变更 ($last_commit -> ${current_commit:0:8})，需要重新构建"
+        return 0
+    fi
+
+    # 检查关键文件是否有变更（比构建状态文件更新）
+    local build_time=$(cat .build-state 2>/dev/null | grep "buildTime" | cut -d'"' -f4)
+    if [ -n "$build_time" ]; then
+        # 检查关键目录是否有文件比构建时间更新
+        local newer_files=$(find packages excalidraw-app/src excalidraw-app/package.json excalidraw-app/vite.config.mts -newer .build-state 2>/dev/null | wc -l)
+        if [ "$newer_files" -gt 0 ]; then
+            echo "📝 发现更新的源文件，需要重新构建"
+            return 0
+        fi
+    fi
+
+    echo "✅ 无需重新构建，使用现有 build"
+    return 1
+}
+
+# 更新构建状态文件
+update_build_state() {
+    local commit=$(git rev-parse HEAD)
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    cat > .build-state << EOF
+{
+  "lastCommit": "$commit",
+  "buildTime": "$timestamp",
+  "buildCommand": "yarn build:app:docker"
+}
+EOF
+    echo "💾 已更新构建状态"
+}
+
 # 本地构建函数
 local_build() {
+    echo "🏗️ 检查构建需求..."
+
+    # 检查是否需要重新构建
+    if ! need_rebuild; then
+        echo "⏭️ 跳过构建，使用现有文件"
+        return 0
+    fi
+
     echo "🏗️ 开始本地构建..."
-    
+
     # 进入应用目录
     cd excalidraw-app
-    
+
     # 确保依赖已安装
     echo "检查并安装依赖..."
     yarn install
-    
-    # 构建生产版本
+
+    # 构建生产版本（统一使用 docker 构建命令）
     echo "构建生产版本..."
-    if [ "$PRODUCTION_MODE" = true ]; then
-        export VITE_APP_DISABLE_SENTRY=true
-        yarn build:app:docker
-    else
-        yarn build
-    fi
-    
+    export VITE_APP_DISABLE_SENTRY=true
+    yarn build:app:docker
+
     echo "✅ 本地构建完成！"
-    
+
     # 返回根目录
     cd ..
+
+    # 更新构建状态
+    update_build_state
 }
 
 # 快速上传代码文件 (排除字体)
@@ -104,14 +189,12 @@ deploy_on_server() {
         pkill -f "vite" || true
         sleep 2
 
-        # 检查并启动后端服务
+        # 检查后端服务
         echo "检查分享功能后端服务..."
-        if ! systemctl is-active excalidraw-backend > /dev/null 2>&1; then
-            echo "启动 Excalidraw Complete 后端..."
-            systemctl start excalidraw-backend
-            sleep 3
+        if lsof -i :3002 > /dev/null 2>&1; then
+            echo "✅ 后端服务已运行（端口 3002）"
         else
-            echo "✅ 后端服务已运行"
+            echo "⚠️ 后端服务未运行，分享功能可能不可用"
         fi
         
         # 创建部署目录
@@ -163,13 +246,13 @@ deploy_on_server() {
         fi
 
         # 检查后端服务
-        if systemctl is-active excalidraw-backend > /dev/null 2>&1; then
+        if lsof -i :3002 > /dev/null 2>&1; then
             echo "✅ 后端服务运行正常！"
             netstat -tuln | grep 3002 && echo "✅ 端口 3002 正在监听" || echo "⚠️ 端口 3002 未监听"
             BACKEND_OK=true
         else
             echo "❌ 后端服务未运行！"
-            systemctl status excalidraw-backend --no-pager -l
+            echo "端口 3002 未被占用，分享功能不可用"
         fi
 
         # 显示系统状态
@@ -211,14 +294,12 @@ upload_code_only
 deploy_on_server
 
 echo
-if [ "$PRODUCTION_MODE" = true ]; then
-    echo "🎉 快速生产部署完成！"
-else
-    echo "🎉 快速开发部署完成！"
-fi
+echo "🎉 智能部署完成！"
 echo "访问地址: https://excalidrawx.duckdns.org"
 echo "服务器日志: ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'tail -f /var/log/excalidraw-prod.log'"
 echo
-echo "💡 提示:"
+echo "💡 使用说明:"
+echo "- 智能部署（自动检测是否需要构建）: ./deploy-prod.sh \"提交信息\""
+echo "- 强制重新构建: ./deploy-prod.sh -f \"提交信息\""
+echo "- 跳过构建直接部署: ./deploy-prod.sh --skip-build"
 echo "- 首次部署需要运行: ./upload-fonts.sh"
-echo "- 日常部署使用: ./deploy-prod.sh p \"提交信息\""
