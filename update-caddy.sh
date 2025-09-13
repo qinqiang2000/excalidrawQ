@@ -19,8 +19,29 @@ ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 << 'EOF'
     cat > /etc/caddy/Caddyfile << 'CADDY'
 # Excalidraw 完整配置（前端 + 后端分享功能）
 excalidrawx.duckdns.org {
-    # 前端应用
-    reverse_proxy / localhost:3000
+    # 静态文件目录 - 直接服务静态资源
+    root * /root/excalidraw-app-build
+
+    # 为静态资源设置正确的 MIME 类型
+    @js {
+        path *.js *.mjs
+    }
+    header @js Content-Type "application/javascript; charset=utf-8"
+
+    @css {
+        path *.css
+    }
+    header @css Content-Type "text/css; charset=utf-8"
+
+    @html {
+        path *.html
+    }
+    header @html Content-Type "text/html; charset=utf-8"
+
+    @json {
+        path *.json *.webmanifest
+    }
+    header @json Content-Type "application/json; charset=utf-8"
 
     # Excalidraw Complete 存储后端
     reverse_proxy /storage-backend/* localhost:3002 {
@@ -39,6 +60,12 @@ excalidrawx.duckdns.org {
 
     # Socket.IO 特定路径
     reverse_proxy /socket.io/* localhost:3002
+
+    # 对于其他 API 请求，代理到前端服务器
+    reverse_proxy /api/* localhost:3000
+
+    # SPA 路由支持 - 所有其他请求返回 index.html
+    try_files {path} /index.html
 
     # 启用 gzip 压缩
     encode gzip
