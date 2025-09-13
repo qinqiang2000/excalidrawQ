@@ -19,15 +19,18 @@ app.use(cors({
 // 解析 JSON 请求体，支持大文件
 app.use(express.json({ limit: '50mb' }));
 
-// 健康检查
-app.get('/api/v2/', (req, res) => {
+// 健康检查 - 支持多个路径
+const healthCheck = (req, res) => {
   res.json({
     status: 'ok',
     message: 'Excalidraw Storage Backend is running',
     version: '1.0.0',
     storage_count: storage.size
   });
-});
+};
+
+app.get('/', healthCheck);  // 根路径（来自 Caddy 的 /storage-backend/）
+app.get('/api/v2/', healthCheck);  // 原始 API 路径
 
 // POST /api/v2/post/ - 保存画板数据（Excalidraw 分享功能使用的端点）
 app.post('/api/v2/post/', (req, res) => {
