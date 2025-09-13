@@ -28,7 +28,7 @@ if [ -n "$COMMIT_MESSAGE" ]; then
 fi
 
 echo "📤 推送到远程仓库..."
-git push origin qiang
+git push excalidrawQ qiang
 
 # 本地构建函数
 local_build() {
@@ -80,7 +80,7 @@ deploy_to_server() {
         
         # 进入项目目录并更新代码
         cd /root/excalidrawQ
-        git pull origin qiang
+        git pull excalidrawQ qiang
         
         # 停止现有服务
         echo "停止现有服务..."
