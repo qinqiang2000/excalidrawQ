@@ -40,4 +40,4 @@ echo
 echo "✅ 字体文件上传完成！"
 echo
 echo "📝 下次部署时使用快速脚本:"
-echo "./deploy-fast.sh p \"提交信息\""
+echo "./deploy-prod.sh p \"提交信息\""

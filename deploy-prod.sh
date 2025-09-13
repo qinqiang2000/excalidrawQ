@@ -180,4 +180,4 @@ echo "服务器日志: ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 'tail 
 echo
 echo "💡 提示:"
 echo "- 首次部署需要运行: ./upload-fonts.sh"
-echo "- 日常部署使用: ./deploy-fast.sh p \"提交信息\""
+echo "- 日常部署使用: ./deploy-prod.sh p \"提交信息\""
