@@ -69,6 +69,14 @@ excalidrawx.duckdns.org {
         not file
         not path /storage-backend/*
         not path /socket.io/*
+        not path /assets/*
+        not path *.js
+        not path *.css
+        not path *.woff2
+        not path *.png
+        not path *.ico
+        not path *.svg
+        not path *.webmanifest
     }
     rewrite @spa /index.html
 
