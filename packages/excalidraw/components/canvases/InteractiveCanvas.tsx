@@ -90,7 +90,8 @@ const InteractiveCanvas = (props: InteractiveCanvasProps) => {
     const remotePointerUserStates: InteractiveCanvasRenderConfig["remotePointerUserStates"] =
       new Map();
 
-    props.appState.collaborators.forEach((user, socketId) => {
+    if (props.appState.collaborators instanceof Map) {
+      props.appState.collaborators.forEach((user, socketId) => {
       if (user.selectedElementIds) {
         for (const id of Object.keys(user.selectedElementIds)) {
           if (!remoteSelectedElementIds.has(id)) {
@@ -120,6 +121,7 @@ const InteractiveCanvas = (props: InteractiveCanvasProps) => {
       );
       remotePointerButton.set(socketId, user.button);
     });
+    }
 
     const selectionColor =
       (props.containerRef?.current &&

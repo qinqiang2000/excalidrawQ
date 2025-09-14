@@ -35,20 +35,16 @@ export const AppMainMenu: React.FC<{
   // 刷新最近文件列表
   const refreshRecentFiles = () => {
     const files = LocalData.getRecentFiles();
-    console.log('🔄 AppMainMenu 刷新最近文件:', files);
     setRecentFiles(files);
   };
 
   useEffect(() => {
-    console.log('🚀 AppMainMenu useEffect 初始化');
     // 初始加载最近文件列表
     refreshRecentFiles();
 
     // 监听 storage 事件以获取其他标签页的更新
     const handleStorageChange = (e: StorageEvent) => {
-      console.log('📡 Storage 事件:', e.key);
       if (e.key === 'excalidraw-recent-files') {
-        console.log('🔄 检测到 recent files 变化，刷新菜单');
         refreshRecentFiles();
       }
     };
@@ -57,12 +53,10 @@ export const AppMainMenu: React.FC<{
 
     // 定期检查更新（用于同一标签页内的更新）
     const interval = setInterval(() => {
-      console.log('⏰ 定期检查最近文件更新');
       refreshRecentFiles();
-    }, 5000); // 改为5秒检查一次，减少刷屏
+    }, 5000);
 
     return () => {
-      console.log('🧹 AppMainMenu 清理事件监听器');
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
     };
@@ -83,9 +77,51 @@ export const AppMainMenu: React.FC<{
               <MainMenu.Item
                 key={file.id}
                 onSelect={() => {
-                  // 创建一个新的画布来加载最近的文件
-                  // 这里简单地刷新页面，实际可以实现更复杂的加载逻辑
-                  window.location.reload();
+                  console.log('🖱️ 点击最近文件:', { id: file.id, name: file.name });
+
+                  // 检查 excalidrawAPI 是否可用
+                  const api = (window as any).excalidrawAPI;
+                  if (!api) {
+                    console.error('❌ excalidrawAPI 不可用');
+                    window.location.reload();
+                    return;
+                  }
+
+                  // 加载临时场景数据
+                  const sceneData = LocalData.loadTemporaryScene(file.id);
+                  console.log('📂 场景数据加载结果:', sceneData ? '成功' : '失败');
+
+                  if (sceneData) {
+                    console.log('📊 场景数据详情:', {
+                      elements: sceneData.elements?.length || 0,
+                      appState: Object.keys(sceneData.appState || {}),
+                      files: Object.keys(sceneData.files || {}).length
+                    });
+
+                    try {
+                      // 使用 excalidrawAPI 加载场景
+                      api.updateScene({
+                        elements: sceneData.elements || [],
+                        appState: {
+                          ...sceneData.appState,
+                          name: file.name,
+                        }
+                      });
+
+                      // 如果有文件数据，也要加载
+                      if (sceneData.files && Object.keys(sceneData.files).length > 0) {
+                        api.addFiles(Object.values(sceneData.files));
+                      }
+
+                      console.log('✅ 场景加载完成:', file.name);
+                    } catch (error) {
+                      console.error('❌ 场景加载失败:', error);
+                      window.location.reload();
+                    }
+                  } else {
+                    console.warn('❌ 无法找到场景数据，刷新页面');
+                    window.location.reload();
+                  }
                 }}
               >
                 {file.name}

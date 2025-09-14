@@ -404,6 +404,14 @@ const ExcalidrawWrapper = () => {
   const [, forceRefresh] = useState(false);
 
   useEffect(() => {
+    // 将 excalidrawAPI 设置到 window 对象上，供其他组件使用
+    if (excalidrawAPI) {
+      (window as any).excalidrawAPI = excalidrawAPI;
+      console.log('✅ excalidrawAPI 已设置到 window 对象');
+    } else {
+      (window as any).excalidrawAPI = null;
+    }
+
     if (isDevEnv()) {
       const debugState = loadSavedDebugState();
 
@@ -743,12 +751,6 @@ const ExcalidrawWrapper = () => {
     // 如果没有关联文件且有内容，自动记录到最近文件列表
     if (!appState.fileHandle) {
       const nonDeletedElements = elements.filter(el => !el.isDeleted);
-      console.log('✅ 检查自动保存条件:', {
-        hasFileHandle: !!appState.fileHandle,
-        hasName: !!appState.name,
-        elementCount: elements.length,
-        nonDeletedCount: nonDeletedElements.length
-      });
 
       if (nonDeletedElements.length > 0 && appState.name) {
         // 检查是否已经记录过这个文件
@@ -756,7 +758,10 @@ const ExcalidrawWrapper = () => {
         const alreadyExists = recentFiles.some(file => file.id === appState.name);
 
         if (!alreadyExists) {
-          console.log('🎯 自动添加到最近文件:', appState.name);
+          console.log('🎯 新场景自动添加到最近文件:', appState.name);
+
+          // 保存完整的场景数据
+          LocalData.saveTemporaryScene(appState.name, elements, appState, files);
 
           // 记录到最近文件列表
           const fileInfo = {
@@ -766,10 +771,10 @@ const ExcalidrawWrapper = () => {
             isTemporary: true
           };
 
-          console.log('💾 添加到最近文件:', fileInfo);
           LocalData.addToRecentFiles(fileInfo);
         } else {
-          console.log('📋 文件已存在于最近列表中:', appState.name);
+          // 静默更新已存在的场景数据，不输出日志
+          LocalData.saveTemporaryScene(appState.name, elements, appState, files);
         }
       }
     }

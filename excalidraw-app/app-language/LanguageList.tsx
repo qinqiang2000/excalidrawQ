@@ -1,20 +1,17 @@
-import { useI18n, languages } from "@excalidraw/excalidraw/i18n";
+import { languages } from "@excalidraw/excalidraw/i18n";
 import React from "react";
 
-import { useSetAtom } from "../app-jotai";
-
-import { appLangCodeAtom } from "./language-state";
+import { useAppLangCode } from "./language-state";
 
 export const LanguageList = ({ style }: { style?: React.CSSProperties }) => {
-  const { t, langCode } = useI18n();
-  const setLangCode = useSetAtom(appLangCodeAtom);
+  const [langCode, setLangCode] = useAppLangCode();
 
   return (
     <select
       className="dropdown-select dropdown-select__language"
       onChange={({ target }) => setLangCode(target.value)}
       value={langCode}
-      aria-label={t("buttons.selectLanguage")}
+      aria-label="Select language"
       style={style}
     >
       {languages.map((lang) => (

@@ -167,6 +167,12 @@ const editorLangCodeAtom = atom(defaultLang.code);
 // - component is rendered internally by <Excalidraw>, but the component
 //   is memoized w/o being updated on `langCode`, `AppState`, or `UIAppState`
 export const useI18n = () => {
-  const langCode = useAtomValue(editorLangCodeAtom);
-  return { t, langCode };
+  try {
+    const langCode = useAtomValue(editorLangCodeAtom);
+    return { t, langCode };
+  } catch (error) {
+    // Fallback when EditorJotaiProvider is not available
+    console.warn('useI18n called outside EditorJotaiProvider context, using fallback');
+    return { t, langCode: defaultLang.code };
+  }
 };

@@ -375,11 +375,9 @@ export class LocalData {
     lastModified: number;
     isTemporary?: boolean;
   }) => {
-    console.log('📝 LocalData.addToRecentFiles 调用:', fileInfo);
     try {
       const stored = localStorage.getItem(this.RECENT_FILES_KEY);
       const recentFiles = stored ? JSON.parse(stored) : [];
-      console.log('📂 当前存储的最近文件:', recentFiles);
 
       // 去重并限制数量（最多10个）
       const updated = [
@@ -387,9 +385,8 @@ export class LocalData {
         ...recentFiles.filter((f: any) => f.id !== fileInfo.id)
       ].slice(0, 10);
 
-      console.log('🔄 更新后的最近文件:', updated);
       localStorage.setItem(this.RECENT_FILES_KEY, JSON.stringify(updated));
-      console.log('✅ 成功保存到 localStorage');
+      console.log('✅ 成功添加到最近文件:', fileInfo.name);
     } catch (error) {
       console.error("❌ Failed to update recent files:", error);
     }
@@ -417,6 +414,66 @@ export class LocalData {
    */
   static clearRecentFiles = () => {
     localStorage.removeItem(this.RECENT_FILES_KEY);
+  };
+
+  /**
+   * 保存临时场景数据 (用于最近文件)
+   */
+  static saveTemporaryScene = (
+    id: string,
+    elements: readonly ExcalidrawElement[],
+    appState: AppState,
+    files: BinaryFiles,
+  ) => {
+    try {
+      const sceneData = {
+        elements: clearElementsForLocalStorage(elements),
+        appState: clearAppStateForLocalStorage(appState),
+        files: Object.fromEntries(
+          Object.entries(files).map(([fileId, fileData]) => [
+            fileId,
+            {
+              mimeType: fileData.mimeType,
+              id: fileData.id,
+              dataURL: fileData.dataURL,
+              created: fileData.created,
+            },
+          ])
+        ),
+      };
+      localStorage.setItem(`excalidraw-temp-scene-${id}`, JSON.stringify(sceneData));
+    } catch (error) {
+      console.error("❌ Failed to save temporary scene:", error);
+    }
+  };
+
+  /**
+   * 加载临时场景数据 (用于最近文件)
+   */
+  static loadTemporaryScene = (id: string): {
+    elements: readonly ExcalidrawElement[];
+    appState: Partial<AppState>;
+    files: BinaryFiles;
+  } | null => {
+    try {
+      const key = `excalidraw-temp-scene-${id}`;
+      const stored = localStorage.getItem(key);
+
+      if (stored) {
+        const sceneData = JSON.parse(stored);
+        console.log('📂 成功加载场景数据:', id, '元素数量:', sceneData.elements?.length || 0);
+        return sceneData;
+      } else {
+        console.warn('📂 找不到场景数据:', id, '存储键:', key);
+
+        // 调试：列出所有相关的存储键
+        const allKeys = Object.keys(localStorage).filter(k => k.startsWith('excalidraw-temp-scene-'));
+        console.log('🔍 现有场景存储键:', allKeys);
+      }
+    } catch (error) {
+      console.error("❌ 加载场景数据出错:", error);
+    }
+    return null;
   };
 }
 export class LibraryIndexedDBAdapter {
