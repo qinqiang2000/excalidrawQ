@@ -35,16 +35,20 @@ export const AppMainMenu: React.FC<{
   // 刷新最近文件列表
   const refreshRecentFiles = () => {
     const files = LocalData.getRecentFiles();
+    console.log('🔄 AppMainMenu 刷新最近文件:', files);
     setRecentFiles(files);
   };
 
   useEffect(() => {
+    console.log('🚀 AppMainMenu useEffect 初始化');
     // 初始加载最近文件列表
     refreshRecentFiles();
 
     // 监听 storage 事件以获取其他标签页的更新
     const handleStorageChange = (e: StorageEvent) => {
+      console.log('📡 Storage 事件:', e.key);
       if (e.key === 'excalidraw-recent-files') {
+        console.log('🔄 检测到 recent files 变化，刷新菜单');
         refreshRecentFiles();
       }
     };
@@ -52,9 +56,13 @@ export const AppMainMenu: React.FC<{
     window.addEventListener('storage', handleStorageChange);
 
     // 定期检查更新（用于同一标签页内的更新）
-    const interval = setInterval(refreshRecentFiles, 1000);
+    const interval = setInterval(() => {
+      console.log('⏰ 定期检查最近文件更新');
+      refreshRecentFiles();
+    }, 5000); // 改为5秒检查一次，减少刷屏
 
     return () => {
+      console.log('🧹 AppMainMenu 清理事件监听器');
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
     };
@@ -69,7 +77,7 @@ export const AppMainMenu: React.FC<{
         <>
           <MainMenu.Group>
             <MainMenu.Item>
-              <strong>{t("buttons.openRecent")}</strong>
+              <strong>打开最近文件</strong>
             </MainMenu.Item>
             {recentFiles.slice(0, 5).map((file) => (
               <MainMenu.Item
@@ -101,7 +109,7 @@ export const AppMainMenu: React.FC<{
                 setRecentFiles([]);
               }}
             >
-              {t("buttons.clearRecent")}
+              清除最近文件
             </MainMenu.Item>
           </MainMenu.Group>
           <MainMenu.Separator />

@@ -375,9 +375,11 @@ export class LocalData {
     lastModified: number;
     isTemporary?: boolean;
   }) => {
+    console.log('📝 LocalData.addToRecentFiles 调用:', fileInfo);
     try {
       const stored = localStorage.getItem(this.RECENT_FILES_KEY);
       const recentFiles = stored ? JSON.parse(stored) : [];
+      console.log('📂 当前存储的最近文件:', recentFiles);
 
       // 去重并限制数量（最多10个）
       const updated = [
@@ -385,9 +387,11 @@ export class LocalData {
         ...recentFiles.filter((f: any) => f.id !== fileInfo.id)
       ].slice(0, 10);
 
+      console.log('🔄 更新后的最近文件:', updated);
       localStorage.setItem(this.RECENT_FILES_KEY, JSON.stringify(updated));
+      console.log('✅ 成功保存到 localStorage');
     } catch (error) {
-      console.warn("Failed to update recent files:", error);
+      console.error("❌ Failed to update recent files:", error);
     }
   };
 

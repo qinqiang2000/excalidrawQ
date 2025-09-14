@@ -732,28 +732,44 @@ const ExcalidrawWrapper = () => {
     appState: AppState,
     files: BinaryFiles,
   ) => {
-    // 如果没有关联文件且有内容，自动创建临时文件名
-    if (!appState.fileHandle && !appState.name) {
-      const nonDeletedElements = elements.filter(el => !el.isDeleted);
-      if (nonDeletedElements.length > 0) {
-        // 生成临时文件名
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-        const tempFileName = `Untitled-${timestamp}`;
+    // console.log('🔄 onChange 触发:', {
+    //   elementCount: elements.length,
+    //   nonDeletedElements: elements.filter(el => !el.isDeleted).length,
+    //   hasFileHandle: !!appState.fileHandle,
+    //   fileName: appState.name,
+    //   excalidrawAPI: !!excalidrawAPI
+    // });
 
-        if (excalidrawAPI) {
-          excalidrawAPI.updateScene({
-            appState: {
-              name: tempFileName
-            }
-          });
+    // 如果没有关联文件且有内容，自动记录到最近文件列表
+    if (!appState.fileHandle) {
+      const nonDeletedElements = elements.filter(el => !el.isDeleted);
+      console.log('✅ 检查自动保存条件:', {
+        hasFileHandle: !!appState.fileHandle,
+        hasName: !!appState.name,
+        elementCount: elements.length,
+        nonDeletedCount: nonDeletedElements.length
+      });
+
+      if (nonDeletedElements.length > 0 && appState.name) {
+        // 检查是否已经记录过这个文件
+        const recentFiles = LocalData.getRecentFiles();
+        const alreadyExists = recentFiles.some(file => file.id === appState.name);
+
+        if (!alreadyExists) {
+          console.log('🎯 自动添加到最近文件:', appState.name);
 
           // 记录到最近文件列表
-          LocalData.addToRecentFiles({
-            id: tempFileName,
-            name: tempFileName,
+          const fileInfo = {
+            id: appState.name,
+            name: appState.name,
             lastModified: Date.now(),
             isTemporary: true
-          });
+          };
+
+          console.log('💾 添加到最近文件:', fileInfo);
+          LocalData.addToRecentFiles(fileInfo);
+        } else {
+          console.log('📋 文件已存在于最近列表中:', appState.name);
         }
       }
     }
