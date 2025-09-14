@@ -4,7 +4,7 @@ import {
   eyeIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { MainMenu } from "@excalidraw/excalidraw/index";
-import React, { useState, useEffect } from "react";
+import React from "react";
 
 import { isDevEnv } from "@excalidraw/common";
 
@@ -12,8 +12,6 @@ import type { Theme } from "@excalidraw/element/types";
 
 import { LanguageList } from "../app-language/LanguageList";
 import { isExcalidrawPlusSignedUser } from "../app_constants";
-import { LocalData } from "../data/LocalData";
-import { t } from "@excalidraw/excalidraw/i18n";
 
 import { saveDebugState } from "./DebugCanvas";
 
@@ -25,132 +23,10 @@ export const AppMainMenu: React.FC<{
   setTheme: (theme: Theme | "system") => void;
   refresh: () => void;
 }> = React.memo((props) => {
-  const [recentFiles, setRecentFiles] = useState<Array<{
-    id: string;
-    name: string;
-    lastModified: number;
-    isTemporary?: boolean;
-  }>>([]);
-
-  // 刷新最近文件列表
-  const refreshRecentFiles = () => {
-    const files = LocalData.getRecentFiles();
-    setRecentFiles(files);
-  };
-
-  useEffect(() => {
-    // 初始加载最近文件列表
-    refreshRecentFiles();
-
-    // 监听 storage 事件以获取其他标签页的更新
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'excalidraw-recent-files') {
-        refreshRecentFiles();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    // 定期检查更新（用于同一标签页内的更新）
-    const interval = setInterval(() => {
-      refreshRecentFiles();
-    }, 5000);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, []);
 
   return (
     <MainMenu>
       <MainMenu.DefaultItems.LoadScene />
-
-      {/* Open Recent 菜单 */}
-      {recentFiles.length > 0 && (
-        <>
-          <MainMenu.Group>
-            <MainMenu.Item>
-              <strong>打开最近文件</strong>
-            </MainMenu.Item>
-            {recentFiles.slice(0, 5).map((file) => (
-              <MainMenu.Item
-                key={file.id}
-                onSelect={() => {
-                  console.log('🖱️ 点击最近文件:', { id: file.id, name: file.name });
-
-                  // 检查 excalidrawAPI 是否可用
-                  const api = (window as any).excalidrawAPI;
-                  if (!api) {
-                    console.error('❌ excalidrawAPI 不可用');
-                    window.location.reload();
-                    return;
-                  }
-
-                  // 加载临时场景数据
-                  const sceneData = LocalData.loadTemporaryScene(file.id);
-                  console.log('📂 场景数据加载结果:', sceneData ? '成功' : '失败');
-
-                  if (sceneData) {
-                    console.log('📊 场景数据详情:', {
-                      elements: sceneData.elements?.length || 0,
-                      appState: Object.keys(sceneData.appState || {}),
-                      files: Object.keys(sceneData.files || {}).length
-                    });
-
-                    try {
-                      // 使用 excalidrawAPI 加载场景
-                      api.updateScene({
-                        elements: sceneData.elements || [],
-                        appState: {
-                          ...sceneData.appState,
-                          name: file.name,
-                        }
-                      });
-
-                      // 如果有文件数据，也要加载
-                      if (sceneData.files && Object.keys(sceneData.files).length > 0) {
-                        api.addFiles(Object.values(sceneData.files));
-                      }
-
-                      console.log('✅ 场景加载完成:', file.name);
-                    } catch (error) {
-                      console.error('❌ 场景加载失败:', error);
-                      window.location.reload();
-                    }
-                  } else {
-                    console.warn('❌ 无法找到场景数据，刷新页面');
-                    window.location.reload();
-                  }
-                }}
-              >
-                {file.name}
-                <span style={{
-                  fontSize: "0.8em",
-                  opacity: 0.7,
-                  marginLeft: "8px"
-                }}>
-                  {new Date(file.lastModified).toLocaleDateString()}
-                </span>
-              </MainMenu.Item>
-            ))}
-            {recentFiles.length > 5 && (
-              <MainMenu.Item>
-                <em>... and {recentFiles.length - 5} more</em>
-              </MainMenu.Item>
-            )}
-            <MainMenu.Item
-              onSelect={() => {
-                LocalData.clearRecentFiles();
-                setRecentFiles([]);
-              }}
-            >
-              清除最近文件
-            </MainMenu.Item>
-          </MainMenu.Group>
-          <MainMenu.Separator />
-        </>
-      )}
 
       <MainMenu.DefaultItems.SaveToActiveFile />
       <MainMenu.DefaultItems.Export />

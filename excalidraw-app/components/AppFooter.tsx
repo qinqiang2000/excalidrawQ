@@ -6,6 +6,7 @@ import { isExcalidrawPlusSignedUser } from "../app_constants";
 import { DebugFooter, isVisualDebuggerEnabled } from "./DebugCanvas";
 import { EncryptedIcon } from "./EncryptedIcon";
 import { ExcalidrawPlusAppLink } from "./ExcalidrawPlusAppLink";
+import { RecentFilesButton } from "./RecentFilesButton";
 
 export const AppFooter = React.memo(
   ({ onChange }: { onChange: () => void }) => {
@@ -24,6 +25,7 @@ export const AppFooter = React.memo(
           ) : (
             <EncryptedIcon />
           )}
+          <RecentFilesButton />
         </div>
       </Footer>
     );
