@@ -4,7 +4,7 @@ import {
   eyeIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { MainMenu } from "@excalidraw/excalidraw/index";
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 import { isDevEnv } from "@excalidraw/common";
 
@@ -12,6 +12,8 @@ import type { Theme } from "@excalidraw/element/types";
 
 import { LanguageList } from "../app-language/LanguageList";
 import { isExcalidrawPlusSignedUser } from "../app_constants";
+import { LocalData } from "../data/LocalData";
+import { t } from "@excalidraw/excalidraw/i18n";
 
 import { saveDebugState } from "./DebugCanvas";
 
@@ -23,9 +25,89 @@ export const AppMainMenu: React.FC<{
   setTheme: (theme: Theme | "system") => void;
   refresh: () => void;
 }> = React.memo((props) => {
+  const [recentFiles, setRecentFiles] = useState<Array<{
+    id: string;
+    name: string;
+    lastModified: number;
+    isTemporary?: boolean;
+  }>>([]);
+
+  // 刷新最近文件列表
+  const refreshRecentFiles = () => {
+    const files = LocalData.getRecentFiles();
+    setRecentFiles(files);
+  };
+
+  useEffect(() => {
+    // 初始加载最近文件列表
+    refreshRecentFiles();
+
+    // 监听 storage 事件以获取其他标签页的更新
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'excalidraw-recent-files') {
+        refreshRecentFiles();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // 定期检查更新（用于同一标签页内的更新）
+    const interval = setInterval(refreshRecentFiles, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <MainMenu>
       <MainMenu.DefaultItems.LoadScene />
+
+      {/* Open Recent 菜单 */}
+      {recentFiles.length > 0 && (
+        <>
+          <MainMenu.Group>
+            <MainMenu.Item>
+              <strong>{t("buttons.openRecent")}</strong>
+            </MainMenu.Item>
+            {recentFiles.slice(0, 5).map((file) => (
+              <MainMenu.Item
+                key={file.id}
+                onSelect={() => {
+                  // 创建一个新的画布来加载最近的文件
+                  // 这里简单地刷新页面，实际可以实现更复杂的加载逻辑
+                  window.location.reload();
+                }}
+              >
+                {file.name}
+                <span style={{
+                  fontSize: "0.8em",
+                  opacity: 0.7,
+                  marginLeft: "8px"
+                }}>
+                  {new Date(file.lastModified).toLocaleDateString()}
+                </span>
+              </MainMenu.Item>
+            ))}
+            {recentFiles.length > 5 && (
+              <MainMenu.Item>
+                <em>... and {recentFiles.length - 5} more</em>
+              </MainMenu.Item>
+            )}
+            <MainMenu.Item
+              onSelect={() => {
+                LocalData.clearRecentFiles();
+                setRecentFiles([]);
+              }}
+            >
+              {t("buttons.clearRecent")}
+            </MainMenu.Item>
+          </MainMenu.Group>
+          <MainMenu.Separator />
+        </>
+      )}
+
       <MainMenu.DefaultItems.SaveToActiveFile />
       <MainMenu.DefaultItems.Export />
       <MainMenu.DefaultItems.SaveAsImage />

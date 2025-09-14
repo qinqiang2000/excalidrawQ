@@ -360,31 +360,59 @@ export class LocalData {
   });
 
   // ---------------------------------------------------------------------------
-  // Check for unsaved changes in new whiteboard
+  // Recent files management
   // ---------------------------------------------------------------------------
 
+  // 存储最近文件的 key
+  private static RECENT_FILES_KEY = "excalidraw-recent-files";
+
   /**
-   * Checks if the current whiteboard has unsaved changes.
-   * For whiteboards without file association, this checks if there's meaningful content.
-   * For whiteboards with file association, returns false as they auto-save.
+   * 添加到最近文件列表
    */
-  static hasUnsavedChanges = (
-    elements: readonly ExcalidrawElement[],
-    appState: AppState,
-    files: BinaryFiles,
-  ): boolean => {
-    // If there's a file handle, the whiteboard is auto-saved, so no unsaved changes
-    if (appState.fileHandle) {
-      return false;
+  static addToRecentFiles = (fileInfo: {
+    id: string;
+    name: string;
+    lastModified: number;
+    isTemporary?: boolean;
+  }) => {
+    try {
+      const stored = localStorage.getItem(this.RECENT_FILES_KEY);
+      const recentFiles = stored ? JSON.parse(stored) : [];
+
+      // 去重并限制数量（最多10个）
+      const updated = [
+        fileInfo,
+        ...recentFiles.filter((f: any) => f.id !== fileInfo.id)
+      ].slice(0, 10);
+
+      localStorage.setItem(this.RECENT_FILES_KEY, JSON.stringify(updated));
+    } catch (error) {
+      console.warn("Failed to update recent files:", error);
     }
+  };
 
-    // Check if there are any non-deleted elements (meaningful content)
-    const nonDeletedElements = elements.filter((element) => !element.isDeleted);
+  /**
+   * 获取最近文件列表
+   */
+  static getRecentFiles = (): Array<{
+    id: string;
+    name: string;
+    lastModified: number;
+    isTemporary?: boolean;
+  }> => {
+    try {
+      const stored = localStorage.getItem(this.RECENT_FILES_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  };
 
-    // Consider the whiteboard as having unsaved changes if:
-    // 1. There are non-deleted elements, OR
-    // 2. There are files (images, etc.)
-    return nonDeletedElements.length > 0 || Object.keys(files).length > 0;
+  /**
+   * 清除最近文件列表
+   */
+  static clearRecentFiles = () => {
+    localStorage.removeItem(this.RECENT_FILES_KEY);
   };
 }
 export class LibraryIndexedDBAdapter {

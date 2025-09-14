@@ -257,13 +257,6 @@ const initializeScene = async (opts: {
         );
       }
       scene.scrollToContent = true;
-      // Mark that this scene was loaded from a shared link
-      if (jsonBackendMatch) {
-        scene.appState = {
-          ...scene.appState,
-          isViewingSharedScene: true,
-        };
-      }
       if (!roomLinkData) {
         window.history.replaceState({}, APP_NAME, window.location.origin);
       }
@@ -712,34 +705,12 @@ const ExcalidrawWrapper = () => {
         const appState = excalidrawAPI.getAppState();
         const files = excalidrawAPI.getFiles();
 
-        // 检查新白板是否有未保存的更改（排除共享场景）
-        if (!appState.fileHandle &&
-            !appState.isViewingSharedScene &&
-            LocalData.hasUnsavedChanges(elements, appState, files)) {
-          // 异步打开导出对话框
-          setTimeout(() => {
-            excalidrawAPI.updateScene({
-              appState: {
-                openDialog: { name: "jsonExport" }
-              }
-            });
-          }, 0);
-
-          // 阻止页面关闭
-          if (import.meta.env.VITE_APP_DISABLE_PREVENT_UNLOAD !== "true") {
-            preventUnload(event);
-          } else {
-            console.warn(
-              "preventing unload disabled (VITE_APP_DISABLE_PREVENT_UNLOAD)",
-            );
-          }
-          return;
-        }
-
-        // 原有的文件保存检查
-        const shouldPreventUnload = LocalData.fileStorage.shouldPreventUnload(elements);
-
-        if (shouldPreventUnload) {
+        if (
+          excalidrawAPI &&
+          LocalData.fileStorage.shouldPreventUnload(
+            excalidrawAPI.getSceneElements(),
+          )
+        ) {
           if (import.meta.env.VITE_APP_DISABLE_PREVENT_UNLOAD !== "true") {
             preventUnload(event);
           } else {
@@ -761,6 +732,32 @@ const ExcalidrawWrapper = () => {
     appState: AppState,
     files: BinaryFiles,
   ) => {
+    // 如果没有关联文件且有内容，自动创建临时文件名
+    if (!appState.fileHandle && !appState.name) {
+      const nonDeletedElements = elements.filter(el => !el.isDeleted);
+      if (nonDeletedElements.length > 0) {
+        // 生成临时文件名
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const tempFileName = `Untitled-${timestamp}`;
+
+        if (excalidrawAPI) {
+          excalidrawAPI.updateScene({
+            appState: {
+              name: tempFileName
+            }
+          });
+
+          // 记录到最近文件列表
+          LocalData.addToRecentFiles({
+            id: tempFileName,
+            name: tempFileName,
+            lastModified: Date.now(),
+            isTemporary: true
+          });
+        }
+      }
+    }
+
     if (collabAPI?.isCollaborating()) {
       collabAPI.syncElements(elements);
     }
