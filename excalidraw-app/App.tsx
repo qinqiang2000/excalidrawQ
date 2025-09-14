@@ -700,18 +700,44 @@ const ExcalidrawWrapper = () => {
     const unloadHandler = (event: BeforeUnloadEvent) => {
       LocalData.flushSave();
 
-      if (
-        excalidrawAPI &&
-        LocalData.fileStorage.shouldPreventUnload(
-          excalidrawAPI.getSceneElements(),
-        )
-      ) {
-        if (import.meta.env.VITE_APP_DISABLE_PREVENT_UNLOAD !== "true") {
-          preventUnload(event);
-        } else {
-          console.warn(
-            "preventing unload disabled (VITE_APP_DISABLE_PREVENT_UNLOAD)",
-          );
+      if (excalidrawAPI) {
+        const elements = excalidrawAPI.getSceneElements();
+        const appState = excalidrawAPI.getAppState();
+        const files = excalidrawAPI.getFiles();
+
+        // 检查新白板是否有未保存的更改
+        if (!appState.fileHandle && LocalData.hasUnsavedChanges(elements, appState, files)) {
+          // 异步打开导出对话框
+          setTimeout(() => {
+            excalidrawAPI.updateScene({
+              appState: {
+                openDialog: { name: "jsonExport" }
+              }
+            });
+          }, 0);
+
+          // 阻止页面关闭
+          if (import.meta.env.VITE_APP_DISABLE_PREVENT_UNLOAD !== "true") {
+            preventUnload(event);
+          } else {
+            console.warn(
+              "preventing unload disabled (VITE_APP_DISABLE_PREVENT_UNLOAD)",
+            );
+          }
+          return;
+        }
+
+        // 原有的文件保存检查
+        const shouldPreventUnload = LocalData.fileStorage.shouldPreventUnload(elements);
+
+        if (shouldPreventUnload) {
+          if (import.meta.env.VITE_APP_DISABLE_PREVENT_UNLOAD !== "true") {
+            preventUnload(event);
+          } else {
+            console.warn(
+              "preventing unload disabled (VITE_APP_DISABLE_PREVENT_UNLOAD)",
+            );
+          }
         }
       }
     };

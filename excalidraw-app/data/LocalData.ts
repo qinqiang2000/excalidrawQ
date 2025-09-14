@@ -358,6 +358,34 @@ export class LocalData {
       return { savedFiles, erroredFiles };
     },
   });
+
+  // ---------------------------------------------------------------------------
+  // Check for unsaved changes in new whiteboard
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Checks if the current whiteboard has unsaved changes.
+   * For whiteboards without file association, this checks if there's meaningful content.
+   * For whiteboards with file association, returns false as they auto-save.
+   */
+  static hasUnsavedChanges = (
+    elements: readonly ExcalidrawElement[],
+    appState: AppState,
+    files: BinaryFiles,
+  ): boolean => {
+    // If there's a file handle, the whiteboard is auto-saved, so no unsaved changes
+    if (appState.fileHandle) {
+      return false;
+    }
+
+    // Check if there are any non-deleted elements (meaningful content)
+    const nonDeletedElements = elements.filter((element) => !element.isDeleted);
+
+    // Consider the whiteboard as having unsaved changes if:
+    // 1. There are non-deleted elements, OR
+    // 2. There are files (images, etc.)
+    return nonDeletedElements.length > 0 || Object.keys(files).length > 0;
+  };
 }
 export class LibraryIndexedDBAdapter {
   /** IndexedDB database and store name */
