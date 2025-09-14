@@ -396,6 +396,8 @@ export interface AppState {
   offsetLeft: number;
 
   fileHandle: FileSystemHandle | null;
+  /** indicates whether the current scene was loaded from a shared link */
+  isViewingSharedScene: boolean;
   collaborators: Map<SocketId, Collaborator>;
   stats: {
     open: boolean;

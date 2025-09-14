@@ -257,6 +257,13 @@ const initializeScene = async (opts: {
         );
       }
       scene.scrollToContent = true;
+      // Mark that this scene was loaded from a shared link
+      if (jsonBackendMatch) {
+        scene.appState = {
+          ...scene.appState,
+          isViewingSharedScene: true,
+        };
+      }
       if (!roomLinkData) {
         window.history.replaceState({}, APP_NAME, window.location.origin);
       }
@@ -705,8 +712,10 @@ const ExcalidrawWrapper = () => {
         const appState = excalidrawAPI.getAppState();
         const files = excalidrawAPI.getFiles();
 
-        // 检查新白板是否有未保存的更改
-        if (!appState.fileHandle && LocalData.hasUnsavedChanges(elements, appState, files)) {
+        // 检查新白板是否有未保存的更改（排除共享场景）
+        if (!appState.fileHandle &&
+            !appState.isViewingSharedScene &&
+            LocalData.hasUnsavedChanges(elements, appState, files)) {
           // 异步打开导出对话框
           setTimeout(() => {
             excalidrawAPI.updateScene({
