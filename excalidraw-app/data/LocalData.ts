@@ -564,6 +564,32 @@ export class LocalData {
     delete (window as any).__currentTempFileId;
   };
 
+  /**
+   * 更新最近文件的最后修改时间
+   */
+  static updateRecentFileTime = (fileId: string) => {
+    try {
+      const stored = localStorage.getItem(this.RECENT_FILES_KEY);
+      const recentFiles = stored ? JSON.parse(stored) : [];
+      const fileIndex = recentFiles.findIndex((f: any) => f.id === fileId);
+
+      if (fileIndex >= 0) {
+        recentFiles[fileIndex].lastModified = Date.now();
+
+        // 将更新的文件移到最前面
+        const updatedFile = recentFiles[fileIndex];
+        const updatedList = [
+          updatedFile,
+          ...recentFiles.filter((_: any, index: number) => index !== fileIndex)
+        ];
+
+        localStorage.setItem(this.RECENT_FILES_KEY, JSON.stringify(updatedList));
+      }
+    } catch (error) {
+      console.error("❌ Failed to update recent file time:", error);
+    }
+  };
+
 
   /**
    * 更新已存在文件的内容和描述

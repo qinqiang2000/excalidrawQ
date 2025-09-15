@@ -146,32 +146,79 @@ export const RecentFilesButton: React.FC = () => {
             <strong>最近文件</strong>
           </div>
           <div className="recent-files-menu-content">
-            {recentFiles.slice(0, 8).map((file) => {
+            {(() => {
+              // 分离正式文件和临时文件
+              const normalFiles = recentFiles.filter(file => !file.isTemporary);
+              const tempFiles = recentFiles.filter(file => file.isTemporary);
+              const maxDisplayFiles = 6;
+
               return (
-                <div
-                  key={file.id}
-                  className="recent-files-menu-item"
-                  onClick={() => handleFileSelect(file)}
-                >
-                  <div className="recent-file-name">
-                    <span className="file-name-text">{file.name}</span>
-                    <span className="recent-file-date"> ({file.description || '图形画板'})</span>
+                <>
+                  {/* 正式文件区域 */}
+                  {normalFiles.length > 0 && (
+                    <>
+                      <div className="recent-files-section-header">
+                        <span className="section-icon">📄</span>
+                        <span className="section-title">最近打开</span>
+                      </div>
+                      {normalFiles.slice(0, Math.ceil(maxDisplayFiles / 2)).map((file) => (
+                        <div
+                          key={file.id}
+                          className="recent-files-menu-item normal-file"
+                          onClick={() => handleFileSelect(file)}
+                        >
+                          <div className="recent-file-name">
+                            <span className="file-icon">📄</span>
+                            <span className="file-name-text">{file.name}</span>
+                            <span className="recent-file-date"> ({file.description || '图形画板'})</span>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {/* 临时文件区域 */}
+                  {tempFiles.length > 0 && (
+                    <>
+                      {normalFiles.length > 0 && <div className="recent-files-section-separator"></div>}
+                      <div className="recent-files-section-header">
+                        <span className="section-icon">🕐</span>
+                        <span className="section-title">临时文件</span>
+                      </div>
+                      {tempFiles.slice(0, Math.floor(maxDisplayFiles / 2)).map((file) => (
+                        <div
+                          key={file.id}
+                          className="recent-files-menu-item temp-file"
+                          onClick={() => handleFileSelect(file)}
+                        >
+                          <div className="recent-file-name">
+                            <span className="file-icon">🕐</span>
+                            <span className="file-name-text">{file.name}</span>
+                            <span className="recent-file-date"> ({file.description || '图形画板'})</span>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
+
+                  {/* 显示更多文件的提示 */}
+                  {recentFiles.length > maxDisplayFiles && (
+                    <div className="recent-files-menu-item recent-files-more">
+                      <em>还有 {recentFiles.length - maxDisplayFiles} 个文件</em>
+                    </div>
+                  )}
+
+                  {/* 底部操作 */}
+                  <div className="recent-files-menu-separator"></div>
+                  <div
+                    className="recent-files-menu-item recent-files-clear"
+                    onClick={handleClearRecentFiles}
+                  >
+                    清除最近文件
                   </div>
-                </div>
+                </>
               );
-            })}
-            {recentFiles.length > 8 && (
-              <div className="recent-files-menu-item recent-files-more">
-                <em>还有 {recentFiles.length - 8} 个文件</em>
-              </div>
-            )}
-            <div className="recent-files-menu-separator"></div>
-            <div
-              className="recent-files-menu-item recent-files-clear"
-              onClick={handleClearRecentFiles}
-            >
-              清除最近文件
-            </div>
+            })()}
           </div>
         </div>
       )}

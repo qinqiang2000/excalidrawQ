@@ -64,6 +64,35 @@
     padding: 0.25rem 0;
   }
 
+  // 区域标题样式
+  .recent-files-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    .section-icon {
+      font-size: 0.875rem;
+    }
+
+    .section-title {
+      flex: 1;
+    }
+  }
+
+  // 区域分隔线样式
+  .recent-files-section-separator {
+    height: 1px;
+    background: var(--default-border-color);
+    margin: 0.5rem 0.75rem;
+    opacity: 0.6;
+  }
+
   .recent-files-menu-item {
     padding: 0.5rem 1rem;
     cursor: pointer;
@@ -81,6 +110,9 @@
     }
 
     .recent-file-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
       font-size: 0.875rem;
       font-weight: 500;
       color: var(--text-color-primary);
@@ -88,8 +120,15 @@
       overflow: hidden;
       text-overflow: ellipsis;
 
+      .file-icon {
+        font-size: 0.875rem;
+        flex-shrink: 0;
+      }
+
       .file-name-text {
-        // 保持文件名的原始样式
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .recent-file-date {
@@ -97,6 +136,7 @@
         color: var(--text-color-tertiary);
         opacity: 0.7;
         font-weight: normal;
+        flex-shrink: 0;
       }
     }
 
@@ -115,6 +155,43 @@
 
       em {
         font-size: 0.8rem;
+      }
+    }
+
+    // 正式文件样式
+    &.normal-file {
+      .recent-file-name {
+        .file-icon {
+          opacity: 0.8;
+        }
+      }
+
+      &:hover {
+        background-color: var(--button-gray-1);
+        border-left: 3px solid var(--color-primary);
+      }
+    }
+
+    // 临时文件样式
+    &.temp-file {
+      .recent-file-name {
+        .file-icon {
+          opacity: 0.6;
+        }
+
+        .file-name-text {
+          font-style: italic;
+          opacity: 0.9;
+        }
+
+        .recent-file-date {
+          opacity: 0.6;
+        }
+      }
+
+      &:hover {
+        background-color: var(--button-gray-1);
+        border-left: 3px solid var(--color-gray-60);
       }
     }
 

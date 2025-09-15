@@ -556,12 +556,14 @@ const ExcalidrawWrapper = () => {
             );
 
             // Update the scene with new content and file handle
+            // 优先使用文件系统的文件名而不是文件内容中保存的名称
+            const fileSystemName = file.name.replace(/\.excalidraw$/, "");
             excalidrawAPI.updateScene({
               elements: elements || [],
               appState: {
                 ...appState,
                 fileHandle: fileHandle as any,
-                name: file.name.replace(/\.excalidraw$/, ""),
+                name: fileSystemName,
               },
             });
 
@@ -709,12 +711,7 @@ const ExcalidrawWrapper = () => {
       LocalData.flushSave();
 
       if (excalidrawAPI) {
-        const elements = excalidrawAPI.getSceneElements();
-        const appState = excalidrawAPI.getAppState();
-        const files = excalidrawAPI.getFiles();
-
         if (
-          excalidrawAPI &&
           LocalData.fileStorage.shouldPreventUnload(
             excalidrawAPI.getSceneElements(),
           )
@@ -748,17 +745,64 @@ const ExcalidrawWrapper = () => {
     //   excalidrawAPI: !!excalidrawAPI
     // });
 
-    // 如果没有关联文件且有内容，自动记录到最近文件列表
-    if (!appState.fileHandle) {
-      const nonDeletedElements = elements.filter(el => !el.isDeleted);
+    const nonDeletedElements = elements.filter(el => !el.isDeleted);
 
-      if (nonDeletedElements.length > 0) {
-        // 检查是否是无标题或默认名称，需要智能命名
-        const isDefaultName = !appState.name ||
-                             appState.name.startsWith('无标题') ||
-                             appState.name === 'Untitled' ||
-                             appState.name.match(/^无标题-\d{4}-\d{2}-\d{2}-\d{4}$/);
+    // 处理有内容的场景
+    if (nonDeletedElements.length > 0) {
+      // 检查是否是无标题或默认名称，需要智能命名
+      const isDefaultName = !appState.name ||
+                           appState.name.startsWith('无标题') ||
+                           appState.name === 'Untitled' ||
+                           appState.name.match(/^无标题-\d{4}-\d{2}-\d{2}-\d{4}$/) ||
+                           appState.name.match(/^Untitled-\d{4}-\d{2}-\d{2}-\d{4}$/);
 
+      if (appState.fileHandle) {
+        // 有 fileHandle 的文件（通过文件系统打开的文件）
+        // 优先使用文件名而不是文件内容中保存的名称
+        let fileName = appState.name || "未命名画板";
+
+        // 如果文件名是默认格式但有 fileHandle，尝试从 fileHandle 获取真实文件名
+        if (isDefaultName && appState.fileHandle && 'name' in appState.fileHandle) {
+          const fileSystemName = (appState.fileHandle as any).name;
+          if (fileSystemName) {
+            fileName = fileSystemName.replace(/\.excalidraw$/, "");
+            // 更新 appState 中的名称以保持一致性
+            if (excalidrawAPI && fileName !== appState.name) {
+              excalidrawAPI.updateScene({
+                appState: { name: fileName }
+              });
+            }
+          }
+        }
+
+        const recentFiles = LocalData.getRecentFiles();
+        const existingFile = recentFiles.find(file => file.name === fileName);
+
+        if (!existingFile) {
+          console.log('🎯 通过文件系统打开的文件添加到最近文件:', fileName);
+
+          // 记录到最近文件列表
+          const fileInfo = {
+            name: fileName,
+            lastModified: Date.now(),
+            isTemporary: false, // 通过文件系统打开的都是正式文件
+            description: "本地文件"
+          };
+
+          const uniqueId = LocalData.addToRecentFiles(fileInfo);
+
+          // 使用生成的唯一ID保存场景数据
+          if (uniqueId) {
+            LocalData.saveTemporaryScene(uniqueId, elements, appState, files);
+          }
+        } else {
+          // 静默更新已存在的场景数据，使用现有的ID
+          LocalData.saveTemporaryScene(existingFile.id, elements, appState, files);
+          // 更新最后修改时间
+          LocalData.updateRecentFileTime(existingFile.id);
+        }
+      } else {
+        // 没有 fileHandle 的文件（内存中创建的文件）
         if (isDefaultName) {
           // 检查会话中是否已有当前文件的ID
           const sessionFileId = (window as any).__currentTempFileId;
@@ -784,7 +828,7 @@ const ExcalidrawWrapper = () => {
             const fileInfo = {
               name: appState.name || "未命名画板",
               lastModified: Date.now(),
-              isTemporary: true
+              isTemporary: false // 有意义的文件名应该是正式文件，不是临时文件
             };
 
             const uniqueId = LocalData.addToRecentFiles(fileInfo);
