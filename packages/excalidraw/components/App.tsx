@@ -1611,10 +1611,7 @@ class App extends React.Component<AppProps, AppState> {
                           langCode={getLanguage().code}
                           renderTopRightUI={renderTopRightUI}
                           renderCustomStats={renderCustomStats}
-                          showExitZenModeBtn={
-                            typeof this.props?.zenModeEnabled === "undefined" &&
-                            this.state.zenModeEnabled
-                          }
+                          showExitZenModeBtn={false}
                           UIOptions={this.props.UIOptions}
                           onExportImage={this.onExportImage}
                           renderWelcomeScreen={
@@ -4143,6 +4140,12 @@ class App extends React.Component<AppProps, AppState> {
       }
 
       if (!isInputLike(event.target)) {
+        // ESC key exits zen mode
+        if (event.key === KEYS.ESCAPE && this.state.zenModeEnabled) {
+          this.setState({ zenModeEnabled: false });
+          return;
+        }
+
         if (
           (event.key === KEYS.ESCAPE || event.key === KEYS.ENTER) &&
           this.state.croppingElementId

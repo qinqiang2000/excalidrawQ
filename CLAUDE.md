@@ -32,3 +32,4 @@ yarn fix             # Auto-fix formatting and linting issues
 - Internal packages use path aliases (see `vitest.config.mts`)
 - Build system uses esbuild for packages, Vite for the app
 - TypeScript throughout with strict configuration
+- 用英文增加提示：应用已经加载形式长期运行在3000，请直接测试，不用启动

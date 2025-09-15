@@ -78,12 +78,24 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
     }
   }, [isOpen]);
 
+  // 创建与显示顺序一致的文件数组
+  const getDisplayFiles = () => {
+    const normalFiles = recentFiles.filter(file => !file.isTemporary);
+    const tempFiles = recentFiles.filter(file => file.isTemporary);
+    const maxDisplayFiles = 6;
+
+    const displayedNormalFiles = normalFiles.slice(0, Math.ceil(maxDisplayFiles / 2));
+    const displayedTempFiles = tempFiles.slice(0, Math.floor(maxDisplayFiles / 2));
+
+    return [...displayedNormalFiles, ...displayedTempFiles];
+  };
+
   // 键盘导航处理
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isOpen) return;
 
-      const allFiles = [...recentFiles];
+      const allFiles = getDisplayFiles();
 
       switch (event.key) {
         case KEYS.ARROW_DOWN:
@@ -134,7 +146,7 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
       setIsOpen(prevOpen => {
         if (!prevOpen) {
           // 打开时重置键盘导航索引
-          setKeyboardNavigationIndex(recentFiles.length > 0 ? 0 : -1);
+          setKeyboardNavigationIndex(getDisplayFiles().length > 0 ? 0 : -1);
         }
         return !prevOpen;
       });
@@ -148,7 +160,7 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
   useEffect(() => {
     if (isOpenedByKeyboard && !isOpen) {
       setIsOpen(true);
-      setKeyboardNavigationIndex(recentFiles.length > 0 ? 0 : -1);
+      setKeyboardNavigationIndex(getDisplayFiles().length > 0 ? 0 : -1);
     }
   }, [isOpenedByKeyboard, isOpen, recentFiles.length]);
 
@@ -235,6 +247,7 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
               const normalFiles = recentFiles.filter(file => !file.isTemporary);
               const tempFiles = recentFiles.filter(file => file.isTemporary);
               const maxDisplayFiles = 6;
+              const displayFiles = getDisplayFiles();
 
               return (
                 <>
@@ -246,7 +259,7 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
                         <span className="section-title">最近打开</span>
                       </div>
                       {normalFiles.slice(0, Math.ceil(maxDisplayFiles / 2)).map((file, index) => {
-                        const globalIndex = index;
+                        const globalIndex = displayFiles.findIndex(f => f.id === file.id);
                         const isKeyboardSelected = keyboardNavigationIndex === globalIndex;
                         return (
                           <div
@@ -274,7 +287,7 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
                         <span className="section-title">临时文件</span>
                       </div>
                       {tempFiles.slice(0, Math.floor(maxDisplayFiles / 2)).map((file, index) => {
-                        const globalIndex = normalFiles.slice(0, Math.ceil(maxDisplayFiles / 2)).length + index;
+                        const globalIndex = displayFiles.findIndex(f => f.id === file.id);
                         const isKeyboardSelected = keyboardNavigationIndex === globalIndex;
                         return (
                           <div
