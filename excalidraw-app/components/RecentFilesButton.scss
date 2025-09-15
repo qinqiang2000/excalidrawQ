@@ -87,6 +87,17 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+
+      .file-name-text {
+        // 保持文件名的原始样式
+      }
+
+      .recent-file-date {
+        font-size: 0.75rem;
+        color: var(--text-color-tertiary);
+        opacity: 0.7;
+        font-weight: normal;
+      }
     }
 
     .recent-file-date {

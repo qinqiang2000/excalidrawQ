@@ -752,29 +752,49 @@ const ExcalidrawWrapper = () => {
     if (!appState.fileHandle) {
       const nonDeletedElements = elements.filter(el => !el.isDeleted);
 
-      if (nonDeletedElements.length > 0 && appState.name) {
-        // 检查是否已经记录过这个文件
-        const recentFiles = LocalData.getRecentFiles();
-        const alreadyExists = recentFiles.some(file => file.id === appState.name);
+      if (nonDeletedElements.length > 0) {
+        // 检查是否是无标题或默认名称，需要智能命名
+        const isDefaultName = !appState.name ||
+                             appState.name.startsWith('无标题') ||
+                             appState.name === 'Untitled' ||
+                             appState.name.match(/^无标题-\d{4}-\d{2}-\d{2}-\d{4}$/);
 
-        if (!alreadyExists) {
-          console.log('🎯 新场景自动添加到最近文件:', appState.name);
+        if (isDefaultName) {
+          // 检查会话中是否已有当前文件的ID
+          const sessionFileId = (window as any).__currentTempFileId;
 
-          // 保存完整的场景数据
-          LocalData.saveTemporaryScene(appState.name, elements, appState, files);
-
-          // 记录到最近文件列表
-          const fileInfo = {
-            id: appState.name,
-            name: appState.name,
-            lastModified: Date.now(),
-            isTemporary: true
-          };
-
-          LocalData.addToRecentFiles(fileInfo);
+          if (sessionFileId) {
+            // 更新已存在的临时文件
+            LocalData.updateExistingTemporaryScene(sessionFileId, elements, appState, files);
+          } else {
+            // 创建新的临时文件
+            const result = LocalData.saveTemporarySceneWithSequentialName(elements, appState, files);
+            // 在会话中记录当前文件ID，避免重复创建
+            (window as any).__currentTempFileId = result.id;
+          }
         } else {
-          // 静默更新已存在的场景数据，不输出日志
-          LocalData.saveTemporaryScene(appState.name, elements, appState, files);
+          // 有意义的文件名，检查是否已存在
+          const recentFiles = LocalData.getRecentFiles();
+          const existingFile = recentFiles.find(file => file.name === appState.name);
+
+          if (!existingFile) {
+            console.log('🎯 新场景自动添加到最近文件:', appState.name);
+
+            // 记录到最近文件列表
+            const fileInfo = {
+              name: appState.name,
+              lastModified: Date.now(),
+              isTemporary: true
+            };
+
+            const uniqueId = LocalData.addToRecentFiles(fileInfo);
+
+            // 使用生成的唯一ID保存场景数据
+            LocalData.saveTemporaryScene(uniqueId, elements, appState, files);
+          } else {
+            // 静默更新已存在的场景数据，使用现有的ID
+            LocalData.saveTemporaryScene(existingFile.id, elements, appState, files);
+          }
         }
       }
     }

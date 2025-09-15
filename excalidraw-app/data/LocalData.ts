@@ -367,53 +367,270 @@ export class LocalData {
   private static RECENT_FILES_KEY = "excalidraw-recent-files";
 
   /**
+   * 生成唯一文件ID (包含时间戳和随机数)
+   */
+  private static generateUniqueId = (): string => {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 11);
+    return `${timestamp}-${random}`;
+  };
+
+  /**
+   * 获取下一个可用的文件序号
+   */
+  private static getNextFileNumber = (): number => {
+    const COUNTER_KEY = 'excalidraw-file-counter';
+    const stored = localStorage.getItem(COUNTER_KEY);
+    const current = stored ? parseInt(stored, 10) : 1;
+    localStorage.setItem(COUNTER_KEY, String(current + 1));
+    return current;
+  };
+
+  /**
+   * 生成基于序号的文件名
+   */
+  private static generateSequentialFileName = (): string => {
+    const number = this.getNextFileNumber();
+    return `画板-${String(number).padStart(3, '0')}`;
+  };
+
+  /**
+   * 生成时间戳字符串 (YYYYMMDDHHMM格式)
+   */
+  private static formatTimestamp = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+
+    return `${year}${month}${day}${hour}${minute}`;
+  };
+
+  /**
+   * 基于白板内容生成简单描述
+   */
+  private static generateContentDescription = (elements: readonly ExcalidrawElement[]): string => {
+    // 过滤掉删除的元素
+    const activeElements = elements.filter(el => !el.isDeleted);
+
+    if (activeElements.length === 0) {
+      return '空白画板';
+    }
+
+    // 查找文本元素
+    const textElements = activeElements.filter(el => el.type === 'text' && 'text' in el && el.text.trim());
+
+    if (textElements.length > 0) {
+      return '包含文字';
+    }
+
+    // 统计图形类型
+    const elementTypes = activeElements.reduce((acc, el) => {
+      acc[el.type] = (acc[el.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // 基于主要图形类型生成描述
+    const typeNames = {
+      rectangle: '矩形',
+      ellipse: '椭圆',
+      diamond: '菱形',
+      line: '线条',
+      arrow: '箭头',
+      freedraw: '手绘',
+      image: '图片',
+      frame: '框架'
+    };
+
+    const mainType = Object.entries(elementTypes)
+      .sort(([,a], [,b]) => b - a)[0];
+
+    if (mainType) {
+      const [type, count] = mainType;
+      const typeName = typeNames[type as keyof typeof typeNames] || type;
+      return count > 1 ? `${typeName}图形 (${count}个)` : `${typeName}图形`;
+    }
+
+    return `${activeElements.length}个图形`;
+  };
+
+  /**
+   * 生成带时间戳的描述
+   */
+  private static generateDescriptionWithTime = (
+    elements: readonly ExcalidrawElement[],
+    timestamp: number
+  ): string => {
+    const contentDesc = this.generateContentDescription(elements);
+    const timeStr = this.formatTimestamp(timestamp);
+    return `${contentDesc} ${timeStr}`;
+  };
+
+  /**
    * 添加到最近文件列表
    */
   static addToRecentFiles = (fileInfo: {
-    id: string;
+    id?: string;
     name: string;
     lastModified: number;
     isTemporary?: boolean;
+    description?: string;
   }) => {
     try {
       const stored = localStorage.getItem(this.RECENT_FILES_KEY);
       const recentFiles = stored ? JSON.parse(stored) : [];
 
-      // 去重并限制数量（最多10个）
-      const updated = [
-        fileInfo,
-        ...recentFiles.filter((f: any) => f.id !== fileInfo.id)
-      ].slice(0, 10);
+      // 生成唯一ID (如果没有提供)
+      const finalFileInfo = {
+        ...fileInfo,
+        id: fileInfo.id || this.generateUniqueId()
+      };
+
+      // 检查是否已存在相同ID或名称的文件
+      const existingIndex = recentFiles.findIndex((f: any) =>
+        f.id === finalFileInfo.id || f.name === finalFileInfo.name
+      );
+
+      let updated: any[];
+      if (existingIndex >= 0) {
+        // 更新已存在的文件信息（更新时间戳）
+        const existingFile = recentFiles[existingIndex];
+        recentFiles[existingIndex] = {
+          ...existingFile,
+          lastModified: finalFileInfo.lastModified
+        };
+
+        // 将更新的文件移到最前面
+        updated = [
+          recentFiles[existingIndex],
+          ...recentFiles.filter((_, index) => index !== existingIndex)
+        ];
+      } else {
+        // 新文件，添加到最前面并限制数量（最多10个）
+        updated = [
+          finalFileInfo,
+          ...recentFiles
+        ].slice(0, 10);
+      }
 
       localStorage.setItem(this.RECENT_FILES_KEY, JSON.stringify(updated));
-      console.log('✅ 成功添加到最近文件:', fileInfo.name);
+      console.log('✅ 成功添加到最近文件:', finalFileInfo.name, 'ID:', finalFileInfo.id);
+
+      return finalFileInfo.id;
     } catch (error) {
       console.error("❌ Failed to update recent files:", error);
     }
   };
 
   /**
-   * 获取最近文件列表
+   * 获取最近文件列表 (按更新时间降序排列)
    */
   static getRecentFiles = (): Array<{
     id: string;
     name: string;
     lastModified: number;
     isTemporary?: boolean;
+    description?: string;
   }> => {
     try {
       const stored = localStorage.getItem(this.RECENT_FILES_KEY);
-      return stored ? JSON.parse(stored) : [];
+      const files = stored ? JSON.parse(stored) : [];
+      // 按更新时间降序排列 (最新的在前面)
+      return files.sort((a: any, b: any) => b.lastModified - a.lastModified);
     } catch {
       return [];
     }
   };
 
   /**
-   * 清除最近文件列表
+   * 清除最近文件列表及对应的场景数据
    */
   static clearRecentFiles = () => {
+    // 获取现有文件列表
+    const recentFiles = this.getRecentFiles();
+
+    // 清除对应的场景数据
+    recentFiles.forEach(file => {
+      if (file.isTemporary) {
+        localStorage.removeItem(`excalidraw-temp-scene-${file.id}`);
+      }
+    });
+
+    // 清除文件列表
     localStorage.removeItem(this.RECENT_FILES_KEY);
+
+    // 清除会话文件ID
+    delete (window as any).__currentTempFileId;
+
+    console.log('🧹 已清除最近文件及场景数据');
+  };
+
+
+  /**
+   * 更新已存在文件的内容和描述
+   */
+  static updateExistingTemporaryScene = (
+    fileId: string,
+    elements: readonly ExcalidrawElement[],
+    appState: AppState,
+    files: BinaryFiles,
+  ): void => {
+    const timestamp = Date.now();
+    const descriptionWithTime = this.generateDescriptionWithTime(elements, timestamp);
+
+    // 更新场景数据
+    this.saveTemporaryScene(fileId, elements, appState, files);
+
+    // 更新最近文件列表中的描述和时间戳
+    try {
+      const stored = localStorage.getItem(this.RECENT_FILES_KEY);
+      const recentFiles = stored ? JSON.parse(stored) : [];
+      const fileIndex = recentFiles.findIndex((f: any) => f.id === fileId);
+
+      if (fileIndex >= 0) {
+        recentFiles[fileIndex].description = descriptionWithTime;
+        recentFiles[fileIndex].lastModified = timestamp;
+        localStorage.setItem(this.RECENT_FILES_KEY, JSON.stringify(recentFiles));
+        console.log('🔄 更新已存在文件:', { id: fileId, description: descriptionWithTime, timestamp: new Date(timestamp).toLocaleString() });
+      } else {
+        console.warn('❌ 未找到要更新的文件:', fileId);
+      }
+    } catch (error) {
+      console.error('❌ 更新文件失败:', error);
+    }
+  };
+
+  /**
+   * 保存临时场景数据并生成序号文件名 (用于最近文件)
+   */
+  static saveTemporarySceneWithSequentialName = (
+    elements: readonly ExcalidrawElement[],
+    appState: AppState,
+    files: BinaryFiles,
+  ): { id: string; name: string } => {
+    const timestamp = Date.now();
+
+    // 生成序号文件名和带时间戳的描述
+    const sequentialName = this.generateSequentialFileName();
+    const descriptionWithTime = this.generateDescriptionWithTime(elements, timestamp);
+    const uniqueId = this.generateUniqueId();
+
+    // 保存场景数据
+    this.saveTemporaryScene(uniqueId, elements, appState, files);
+
+    // 添加到最近文件列表
+    this.addToRecentFiles({
+      id: uniqueId,
+      name: sequentialName,
+      description: descriptionWithTime,
+      lastModified: timestamp,
+      isTemporary: true
+    });
+
+    console.log('🎯 序号命名保存新文件:', { id: uniqueId, name: sequentialName, description: descriptionWithTime });
+    return { id: uniqueId, name: sequentialName };
   };
 
   /**

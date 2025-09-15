@@ -10,6 +10,7 @@ interface RecentFile {
   name: string;
   lastModified: number;
   isTemporary?: boolean;
+  description?: string;
 }
 
 export const RecentFilesButton: React.FC = () => {
@@ -145,21 +146,23 @@ export const RecentFilesButton: React.FC = () => {
             <strong>最近文件</strong>
           </div>
           <div className="recent-files-menu-content">
-            {recentFiles.slice(0, 8).map((file) => (
-              <div
-                key={file.id}
-                className="recent-files-menu-item"
-                onClick={() => handleFileSelect(file)}
-              >
-                <div className="recent-file-name">{file.name}</div>
-                <div className="recent-file-date">
-                  {new Date(file.lastModified).toLocaleDateString()}
+            {recentFiles.slice(0, 8).map((file) => {
+              return (
+                <div
+                  key={file.id}
+                  className="recent-files-menu-item"
+                  onClick={() => handleFileSelect(file)}
+                >
+                  <div className="recent-file-name">
+                    <span className="file-name-text">{file.name}</span>
+                    <span className="recent-file-date"> ({file.description || '图形画板'})</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {recentFiles.length > 8 && (
               <div className="recent-files-menu-item recent-files-more">
-                <em>... and {recentFiles.length - 8} more</em>
+                <em>还有 {recentFiles.length - 8} 个文件</em>
               </div>
             )}
             <div className="recent-files-menu-separator"></div>
