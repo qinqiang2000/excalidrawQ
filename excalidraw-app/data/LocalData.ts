@@ -516,7 +516,6 @@ export class LocalData {
       }
 
       localStorage.setItem(this.RECENT_FILES_KEY, JSON.stringify(updated));
-      console.log('✅ 成功添加到最近文件:', finalFileInfo.name, 'ID:', finalFileInfo.id);
 
       return finalFileInfo.id;
     } catch (error) {
@@ -563,8 +562,6 @@ export class LocalData {
 
     // 清除会话文件ID
     delete (window as any).__currentTempFileId;
-
-    console.log('🧹 已清除最近文件及场景数据');
   };
 
 
@@ -593,12 +590,9 @@ export class LocalData {
         recentFiles[fileIndex].description = descriptionWithTime;
         recentFiles[fileIndex].lastModified = timestamp;
         localStorage.setItem(this.RECENT_FILES_KEY, JSON.stringify(recentFiles));
-        console.log('🔄 更新已存在文件:', { id: fileId, description: descriptionWithTime, timestamp: new Date(timestamp).toLocaleString() });
-      } else {
-        console.warn('❌ 未找到要更新的文件:', fileId);
       }
     } catch (error) {
-      console.error('❌ 更新文件失败:', error);
+      // Silent error to avoid console spam
     }
   };
 
@@ -629,7 +623,6 @@ export class LocalData {
       isTemporary: true
     });
 
-    console.log('🎯 序号命名保存新文件:', { id: uniqueId, name: sequentialName, description: descriptionWithTime });
     return { id: uniqueId, name: sequentialName };
   };
 
@@ -678,17 +671,10 @@ export class LocalData {
 
       if (stored) {
         const sceneData = JSON.parse(stored);
-        console.log('📂 成功加载场景数据:', id, '元素数量:', sceneData.elements?.length || 0);
         return sceneData;
-      } else {
-        console.warn('📂 找不到场景数据:', id, '存储键:', key);
-
-        // 调试：列出所有相关的存储键
-        const allKeys = Object.keys(localStorage).filter(k => k.startsWith('excalidraw-temp-scene-'));
-        console.log('🔍 现有场景存储键:', allKeys);
       }
     } catch (error) {
-      console.error("❌ 加载场景数据出错:", error);
+      // Silent error to avoid console spam
     }
     return null;
   };
