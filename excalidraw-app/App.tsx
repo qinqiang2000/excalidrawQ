@@ -775,11 +775,19 @@ const ExcalidrawWrapper = () => {
           }
         }
 
+        // 如果有 fileHandle，始终优先使用 fileHandle 的名称而不是 appState.name
+        // 这确保了每个不同的文件都有正确的唯一文件名
+        if (appState.fileHandle && 'name' in appState.fileHandle) {
+          const fileSystemName = (appState.fileHandle as any).name;
+          if (fileSystemName) {
+            fileName = fileSystemName.replace(/\.excalidraw$/, "");
+          }
+        }
+
         const recentFiles = LocalData.getRecentFiles();
         const existingFile = recentFiles.find(file => file.name === fileName);
 
         if (!existingFile) {
-          console.log('🎯 通过文件系统打开的文件添加到最近文件:', fileName);
 
           // 记录到最近文件列表
           const fileInfo = {
@@ -822,8 +830,6 @@ const ExcalidrawWrapper = () => {
           const existingFile = recentFiles.find(file => file.name === appState.name);
 
           if (!existingFile) {
-            console.log('🎯 新场景自动添加到最近文件:', appState.name);
-
             // 记录到最近文件列表
             const fileInfo = {
               name: appState.name || "未命名画板",
