@@ -104,6 +104,7 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
 
         case KEYS.ENTER:
           event.preventDefault();
+          event.stopPropagation();
           if (keyboardNavigationIndex >= 0 && keyboardNavigationIndex < allFiles.length) {
             handleFileSelect(allFiles[keyboardNavigationIndex]);
           }
@@ -111,6 +112,7 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
 
         case KEYS.ESCAPE:
           event.preventDefault();
+          event.stopPropagation();
           setIsOpen(false);
           setKeyboardNavigationIndex(-1);
           if (onKeyboardClose) {
@@ -121,8 +123,8 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
     };
 
     if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
+      window.addEventListener('keydown', handleKeyDown, { capture: true });
+      return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
     }
   }, [isOpen, keyboardNavigationIndex, recentFiles, onKeyboardClose]);
 

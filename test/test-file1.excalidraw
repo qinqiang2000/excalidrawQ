@@ -1,7 +1,7 @@
 {
   "type": "excalidraw",
   "version": 2,
-  "source": "https://excalidrawx.duckdns.org",
+  "source": "http://localhost:3000",
   "elements": [
     {
       "id": "test1",
