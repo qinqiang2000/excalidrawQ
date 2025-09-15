@@ -255,6 +255,7 @@ const LayerUI = ({
             {shouldRenderSelectedShapeActions && renderSelectedShapeActions()}
           </Stack.Col>
           {!appState.viewModeEnabled &&
+            !appState.zenModeEnabled &&
             appState.openDialog?.name !== "elementLinkSelector" && (
               <Section heading="shapes" className="shapes-section">
                 {(heading: React.ReactNode) => (

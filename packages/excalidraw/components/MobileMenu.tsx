@@ -167,6 +167,7 @@ export const MobileMenu = ({
     <>
       {renderSidebars()}
       {!appState.viewModeEnabled &&
+        !appState.zenModeEnabled &&
         appState.openDialog?.name !== "elementLinkSelector" &&
         renderToolbar()}
       <div
