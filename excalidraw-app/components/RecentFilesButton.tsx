@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { clockIcon } from "@excalidraw/excalidraw/components/icons";
 import { LocalData } from "../data/LocalData";
 import { t } from "@excalidraw/excalidraw/i18n";
+import { KEYS } from "@excalidraw/common";
 
 import "./RecentFilesButton.scss";
 
@@ -13,9 +14,18 @@ interface RecentFile {
   description?: string;
 }
 
-export const RecentFilesButton: React.FC = () => {
+interface RecentFilesButtonProps {
+  isOpenedByKeyboard?: boolean;
+  onKeyboardClose?: () => void;
+}
+
+export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
+  isOpenedByKeyboard = false,
+  onKeyboardClose,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [recentFiles, setRecentFiles] = useState<RecentFile[]>([]);
+  const [keyboardNavigationIndex, setKeyboardNavigationIndex] = useState(-1);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -67,6 +77,78 @@ export const RecentFilesButton: React.FC = () => {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isOpen]);
+
+  // 键盘导航处理
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isOpen) return;
+
+      const allFiles = [...recentFiles];
+
+      switch (event.key) {
+        case KEYS.ARROW_DOWN:
+          event.preventDefault();
+          setKeyboardNavigationIndex((prevIndex) => {
+            const nextIndex = prevIndex >= allFiles.length - 1 ? 0 : prevIndex + 1;
+            return nextIndex;
+          });
+          break;
+
+        case KEYS.ARROW_UP:
+          event.preventDefault();
+          setKeyboardNavigationIndex((prevIndex) => {
+            const nextIndex = prevIndex <= 0 ? allFiles.length - 1 : prevIndex - 1;
+            return nextIndex;
+          });
+          break;
+
+        case KEYS.ENTER:
+          event.preventDefault();
+          if (keyboardNavigationIndex >= 0 && keyboardNavigationIndex < allFiles.length) {
+            handleFileSelect(allFiles[keyboardNavigationIndex]);
+          }
+          break;
+
+        case KEYS.ESCAPE:
+          event.preventDefault();
+          setIsOpen(false);
+          setKeyboardNavigationIndex(-1);
+          if (onKeyboardClose) {
+            onKeyboardClose();
+          }
+          break;
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, keyboardNavigationIndex, recentFiles, onKeyboardClose]);
+
+  // 监听来自 action 的打开事件
+  useEffect(() => {
+    const handleToggleRecentFiles = () => {
+      setIsOpen(prevOpen => {
+        if (!prevOpen) {
+          // 打开时重置键盘导航索引
+          setKeyboardNavigationIndex(recentFiles.length > 0 ? 0 : -1);
+        }
+        return !prevOpen;
+      });
+    };
+
+    window.addEventListener('toggle-recent-files', handleToggleRecentFiles);
+    return () => window.removeEventListener('toggle-recent-files', handleToggleRecentFiles);
+  }, [recentFiles.length]);
+
+  // 当通过键盘快捷键打开时
+  useEffect(() => {
+    if (isOpenedByKeyboard && !isOpen) {
+      setIsOpen(true);
+      setKeyboardNavigationIndex(recentFiles.length > 0 ? 0 : -1);
+    }
+  }, [isOpenedByKeyboard, isOpen, recentFiles.length]);
 
   const handleFileSelect = (file: RecentFile) => {
     console.log('🖱️ 点击最近文件:', { id: file.id, name: file.name });
@@ -161,19 +243,23 @@ export const RecentFilesButton: React.FC = () => {
                         <span className="section-icon">📄</span>
                         <span className="section-title">最近打开</span>
                       </div>
-                      {normalFiles.slice(0, Math.ceil(maxDisplayFiles / 2)).map((file) => (
-                        <div
-                          key={file.id}
-                          className="recent-files-menu-item normal-file"
-                          onClick={() => handleFileSelect(file)}
-                        >
-                          <div className="recent-file-name">
-                            <span className="file-icon">📄</span>
-                            <span className="file-name-text">{file.name}</span>
-                            <span className="recent-file-date"> ({file.description || '图形画板'})</span>
+                      {normalFiles.slice(0, Math.ceil(maxDisplayFiles / 2)).map((file, index) => {
+                        const globalIndex = index;
+                        const isKeyboardSelected = keyboardNavigationIndex === globalIndex;
+                        return (
+                          <div
+                            key={file.id}
+                            className={`recent-files-menu-item normal-file ${isKeyboardSelected ? 'keyboard-selected' : ''}`}
+                            onClick={() => handleFileSelect(file)}
+                          >
+                            <div className="recent-file-name">
+                              <span className="file-icon">📄</span>
+                              <span className="file-name-text">{file.name}</span>
+                              <span className="recent-file-date"> ({file.description || '图形画板'})</span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </>
                   )}
 
@@ -185,19 +271,23 @@ export const RecentFilesButton: React.FC = () => {
                         <span className="section-icon">🕐</span>
                         <span className="section-title">临时文件</span>
                       </div>
-                      {tempFiles.slice(0, Math.floor(maxDisplayFiles / 2)).map((file) => (
-                        <div
-                          key={file.id}
-                          className="recent-files-menu-item temp-file"
-                          onClick={() => handleFileSelect(file)}
-                        >
-                          <div className="recent-file-name">
-                            <span className="file-icon">🕐</span>
-                            <span className="file-name-text">{file.name}</span>
-                            <span className="recent-file-date"> ({file.description || '图形画板'})</span>
+                      {tempFiles.slice(0, Math.floor(maxDisplayFiles / 2)).map((file, index) => {
+                        const globalIndex = normalFiles.slice(0, Math.ceil(maxDisplayFiles / 2)).length + index;
+                        const isKeyboardSelected = keyboardNavigationIndex === globalIndex;
+                        return (
+                          <div
+                            key={file.id}
+                            className={`recent-files-menu-item temp-file ${isKeyboardSelected ? 'keyboard-selected' : ''}`}
+                            onClick={() => handleFileSelect(file)}
+                          >
+                            <div className="recent-file-name">
+                              <span className="file-icon">🕐</span>
+                              <span className="file-name-text">{file.name}</span>
+                              <span className="recent-file-date"> ({file.description || '图形画板'})</span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </>
                   )}
 

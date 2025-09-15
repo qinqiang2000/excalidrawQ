@@ -82,7 +82,7 @@ export const SHAPES = [
   {
     icon: EraserIcon,
     value: "eraser",
-    key: KEYS.E,
+    key: null,
     numericKey: KEYS["0"],
     fillable: false,
   },

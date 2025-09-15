@@ -522,7 +522,7 @@ export const actionToggleEraserTool = register({
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     };
   },
-  keyTest: (event) => event.key === KEYS.E,
+  keyTest: () => false, // E 键已被最近文件功能占用，橡皮擦保留数字键 0
 });
 
 export const actionToggleLassoTool = register({
