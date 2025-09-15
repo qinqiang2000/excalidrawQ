@@ -782,7 +782,7 @@ const ExcalidrawWrapper = () => {
 
             // 记录到最近文件列表
             const fileInfo = {
-              name: appState.name,
+              name: appState.name || "未命名画板",
               lastModified: Date.now(),
               isTemporary: true
             };
@@ -790,7 +790,9 @@ const ExcalidrawWrapper = () => {
             const uniqueId = LocalData.addToRecentFiles(fileInfo);
 
             // 使用生成的唯一ID保存场景数据
-            LocalData.saveTemporaryScene(uniqueId, elements, appState, files);
+            if (uniqueId) {
+              LocalData.saveTemporaryScene(uniqueId, elements, appState, files);
+            }
           } else {
             // 静默更新已存在的场景数据，使用现有的ID
             LocalData.saveTemporaryScene(existingFile.id, elements, appState, files);

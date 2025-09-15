@@ -505,7 +505,7 @@ export class LocalData {
         // 将更新的文件移到最前面
         updated = [
           recentFiles[existingIndex],
-          ...recentFiles.filter((_, index) => index !== existingIndex)
+          ...recentFiles.filter((_: any, index: number) => index !== existingIndex)
         ];
       } else {
         // 新文件，添加到最前面并限制数量（最多10个）
