@@ -790,11 +790,12 @@ const ExcalidrawWrapper = () => {
         if (!existingFile) {
 
           // 记录到最近文件列表
+          const timestamp = Date.now();
           const fileInfo = {
             name: fileName,
-            lastModified: Date.now(),
+            lastModified: timestamp,
             isTemporary: false, // 通过文件系统打开的都是正式文件
-            description: "本地文件"
+            description: LocalData.generateTimestampOnlyDescription(timestamp)
           };
 
           const uniqueId = LocalData.addToRecentFiles(fileInfo);
@@ -831,10 +832,12 @@ const ExcalidrawWrapper = () => {
 
           if (!existingFile) {
             // 记录到最近文件列表
+            const timestamp = Date.now();
             const fileInfo = {
               name: appState.name || "未命名画板",
-              lastModified: Date.now(),
-              isTemporary: false // 有意义的文件名应该是正式文件，不是临时文件
+              lastModified: timestamp,
+              isTemporary: false, // 有意义的文件名应该是正式文件，不是临时文件
+              description: LocalData.generateTimestampOnlyDescription(timestamp)
             };
 
             const uniqueId = LocalData.addToRecentFiles(fileInfo);

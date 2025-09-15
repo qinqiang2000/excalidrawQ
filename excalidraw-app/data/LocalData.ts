@@ -395,7 +395,7 @@ export class LocalData {
   };
 
   /**
-   * 生成时间戳字符串 (YYYYMMDDHHMM格式)
+   * 生成时间戳字符串 (YYYYMMDD_HHMM格式)
    */
   private static formatTimestamp = (timestamp: number): string => {
     const date = new Date(timestamp);
@@ -405,7 +405,7 @@ export class LocalData {
     const hour = String(date.getHours()).padStart(2, '0');
     const minute = String(date.getMinutes()).padStart(2, '0');
 
-    return `${year}${month}${day}${hour}${minute}`;
+    return `${year}${month}${day}_${hour}${minute}`;
   };
 
   /**
@@ -466,6 +466,13 @@ export class LocalData {
     const contentDesc = this.generateContentDescription(elements);
     const timeStr = this.formatTimestamp(timestamp);
     return `${contentDesc} ${timeStr}`;
+  };
+
+  /**
+   * 为常规文件生成时间戳描述（仅时间戳）
+   */
+  static generateTimestampOnlyDescription = (timestamp: number): string => {
+    return this.formatTimestamp(timestamp);
   };
 
   /**
@@ -574,7 +581,18 @@ export class LocalData {
       const fileIndex = recentFiles.findIndex((f: any) => f.id === fileId);
 
       if (fileIndex >= 0) {
-        recentFiles[fileIndex].lastModified = Date.now();
+        const timestamp = Date.now();
+        const file = recentFiles[fileIndex];
+
+        // 更新时间戳
+        recentFiles[fileIndex].lastModified = timestamp;
+
+        // 根据文件类型更新描述
+        if (!file.isTemporary) {
+          // 常规文件：只显示时间戳
+          recentFiles[fileIndex].description = this.generateTimestampOnlyDescription(timestamp);
+        }
+        // 临时文件保持现有描述不变，因为它们通过 updateExistingTemporaryScene 更新
 
         // 将更新的文件移到最前面
         const updatedFile = recentFiles[fileIndex];
