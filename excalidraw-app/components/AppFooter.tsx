@@ -3,6 +3,7 @@ import React, { useCallback } from "react";
 import { useI18n } from "@excalidraw/excalidraw/i18n";
 import { useExcalidrawActionManager } from "@excalidraw/excalidraw/components/App";
 import { actionPresent } from "@excalidraw/excalidraw/actions";
+import { getShortcutFromShortcutName } from "@excalidraw/excalidraw/actions/shortcuts";
 
 import { isExcalidrawPlusSignedUser } from "../app_constants";
 
@@ -20,6 +21,11 @@ export const AppFooter = React.memo(
       [actionManager],
     );
 
+    const presentShortcut = getShortcutFromShortcutName("present");
+    const presentTooltip = presentShortcut
+      ? `${t("labels.present")} (${presentShortcut})`
+      : t("labels.present");
+
     return (
       <Footer>
         <div
@@ -36,7 +42,11 @@ export const AppFooter = React.memo(
             <EncryptedIcon />
           )}
           <RecentFilesButton />
-          <Button onSelect={onPresent} style={{ width: "fit-content" }}>
+          <Button
+            onSelect={onPresent}
+            style={{ width: "fit-content" }}
+            title={presentTooltip}
+          >
             {t("labels.present")}
           </Button>
         </div>

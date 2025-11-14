@@ -1,12 +1,15 @@
 import { CaptureUpdateAction } from "@excalidraw/excalidraw";
 import { register } from "@excalidraw/excalidraw/actions/register";
 import { presentIcon } from "@excalidraw/excalidraw/components/icons";
+import { KEYS } from "@excalidraw/common/keys";
 
 export const actionPresent = register({
   name: "present",
   label: "labels.present",
   icon: presentIcon,
   trackEvent: { category: "canvas" },
+  keyTest: (event) =>
+    event[KEYS.CTRL_OR_CMD] && event.shiftKey && event.code === "F5",
   perform: (_, appState, __, app) => {
     const frames = app.scene
       .getNonDeletedElements()
