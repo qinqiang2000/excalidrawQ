@@ -588,6 +588,7 @@ class App extends React.Component<AppProps, AppState> {
   public id: string;
   private store: Store;
   private history: History;
+  private presentationModeEnabled: boolean;
   public excalidrawContainerValue: {
     container: HTMLDivElement | null;
     id: string;
@@ -674,12 +675,14 @@ class App extends React.Component<AppProps, AppState> {
     const {
       excalidrawAPI,
       viewModeEnabled = false,
+      presentationModeEnabled = false,
       zenModeEnabled = false,
       gridModeEnabled = false,
       objectsSnapModeEnabled = false,
       theme = defaultAppState.theme,
       name = `${t("labels.untitled")}-${getDateTime()}`,
     } = props;
+    this.presentationModeEnabled = presentationModeEnabled;
     this.state = {
       ...defaultAppState,
       theme,
@@ -1602,38 +1605,40 @@ class App extends React.Component<AppProps, AppState> {
                       <ExcalidrawActionManagerContext.Provider
                         value={this.actionManager}
                       >
-                        <LayerUI
-                          canvas={this.canvas}
-                          appState={this.state}
-                          files={this.files}
-                          setAppState={this.setAppState}
-                          actionManager={this.actionManager}
-                          elements={this.scene.getNonDeletedElements()}
-                          onLockToggle={this.toggleLock}
-                          onPenModeToggle={this.togglePenMode}
-                          onHandToolToggle={this.onHandToolToggle}
-                          langCode={getLanguage().code}
-                          renderTopRightUI={renderTopRightUI}
-                          renderCustomStats={renderCustomStats}
-                          showExitZenModeBtn={false}
-                          UIOptions={this.props.UIOptions}
-                          onExportImage={this.onExportImage}
-                          renderWelcomeScreen={
-                            !this.state.isLoading &&
-                            this.state.showWelcomeScreen &&
-                            this.state.activeTool.type ===
-                              this.defaultSelectionTool &&
-                            !this.state.zenModeEnabled &&
-                            !this.scene.getElementsIncludingDeleted().length
-                          }
-                          app={this}
-                          isCollaborating={this.props.isCollaborating}
-                          generateLinkForSelection={
-                            this.props.generateLinkForSelection
-                          }
-                        >
-                          {this.props.children}
-                        </LayerUI>
+                        {!this.presentationModeEnabled && (
+                          <LayerUI
+                            canvas={this.canvas}
+                            appState={this.state}
+                            files={this.files}
+                            setAppState={this.setAppState}
+                            actionManager={this.actionManager}
+                            elements={this.scene.getNonDeletedElements()}
+                            onLockToggle={this.toggleLock}
+                            onPenModeToggle={this.togglePenMode}
+                            onHandToolToggle={this.onHandToolToggle}
+                            langCode={getLanguage().code}
+                            renderTopRightUI={renderTopRightUI}
+                            renderCustomStats={renderCustomStats}
+                            showExitZenModeBtn={false}
+                            UIOptions={this.props.UIOptions}
+                            onExportImage={this.onExportImage}
+                            renderWelcomeScreen={
+                              !this.state.isLoading &&
+                              this.state.showWelcomeScreen &&
+                              this.state.activeTool.type ===
+                                this.defaultSelectionTool &&
+                              !this.state.zenModeEnabled &&
+                              !this.scene.getElementsIncludingDeleted().length
+                            }
+                            app={this}
+                            isCollaborating={this.props.isCollaborating}
+                            generateLinkForSelection={
+                              this.props.generateLinkForSelection
+                            }
+                          >
+                            {this.props.children}
+                          </LayerUI>
+                        )}
 
                         <div className="excalidraw-textEditorContainer" />
                         <div className="excalidraw-contextMenuContainer" />
