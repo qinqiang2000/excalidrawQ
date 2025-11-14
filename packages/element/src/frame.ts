@@ -945,3 +945,42 @@ export const frameAndChildrenSelectedTogether = (
     )
   );
 };
+
+/**
+ * Get the presentation order index (1-based) of a frame element.
+ * Frames are ordered by their Y-axis position.
+ * Returns null if the element is not found in the frames list.
+ */
+export const getFrameOrderIndex = (
+  targetFrame: ExcalidrawFrameLikeElement,
+  allElements: ElementsMapOrArray,
+): number | null => {
+  const frames = getFrameLikeElements(Array.from(allElements.values()));
+
+  // Sort frames by Y position (same logic as presentation mode)
+  const sortedFrames = frames
+    .filter((f) => !f.isDeleted)
+    .sort((f1, f2) => f1.y - f2.y);
+
+  const index = sortedFrames.findIndex((f) => f.id === targetFrame.id);
+
+  return index === -1 ? null : index + 1; // 1-based index
+};
+
+/**
+ * Get the frame title with presentation order number prefix.
+ * Returns format: "#1 Frame Name" or "#2 My Slide"
+ */
+export const getFrameLikeTitleWithNumber = (
+  element: ExcalidrawFrameLikeElement,
+  allElements: ElementsMapOrArray,
+): string => {
+  const orderIndex = getFrameOrderIndex(element, allElements);
+  const title = getFrameLikeTitle(element);
+
+  if (orderIndex === null) {
+    return title;
+  }
+
+  return `#${orderIndex} ${title}`;
+};

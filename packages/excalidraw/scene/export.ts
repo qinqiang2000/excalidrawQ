@@ -30,6 +30,7 @@ import {
   getElementsOverlappingFrame,
   getFrameLikeElements,
   getFrameLikeTitle,
+  getFrameLikeTitleWithNumber,
   getRootElements,
 } from "@excalidraw/element";
 
@@ -116,7 +117,7 @@ const addFrameLabelsAsTextElements = (
         strokeColor: opts.exportWithDarkMode
           ? FRAME_STYLE.nameColorDarkTheme
           : FRAME_STYLE.nameColorLightTheme,
-        text: getFrameLikeTitle(element),
+        text: getFrameLikeTitleWithNumber(element, elements),
       });
       textElement.y -= textElement.height;
 

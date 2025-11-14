@@ -184,6 +184,7 @@ import {
   updateFrameMembershipOfSelectedElements,
   isElementInFrame,
   getFrameLikeTitle,
+  getFrameLikeTitleWithNumber,
   getElementsOverlappingFrame,
   filterElementsEligibleAsFrameChildren,
   hitElementBoundText,
@@ -1409,7 +1410,10 @@ class App extends React.Component<AppProps, AppState> {
 
       let frameNameJSX;
 
-      const frameName = getFrameLikeTitle(f);
+      const frameName = getFrameLikeTitleWithNumber(
+        f,
+        this.scene.getElementsIncludingDeleted(),
+      );
 
       if (f.id === this.state.editingFrame) {
         const frameNameInEdit = frameName;
