@@ -1,5 +1,8 @@
-import { Footer } from "@excalidraw/excalidraw/index";
-import React from "react";
+import { Button, Footer } from "@excalidraw/excalidraw/index";
+import React, { useCallback } from "react";
+import { useI18n } from "@excalidraw/excalidraw/i18n";
+import { useExcalidrawActionManager } from "@excalidraw/excalidraw/components/App";
+import { actionPresent } from "@excalidraw/excalidraw/actions";
 
 import { isExcalidrawPlusSignedUser } from "../app_constants";
 
@@ -10,6 +13,13 @@ import { RecentFilesButton } from "./RecentFilesButton";
 
 export const AppFooter = React.memo(
   ({ onChange }: { onChange: () => void }) => {
+    const { t } = useI18n();
+    const actionManager = useExcalidrawActionManager();
+    const onPresent = useCallback(
+      () => actionManager.executeAction(actionPresent),
+      [actionManager],
+    );
+
     return (
       <Footer>
         <div
@@ -26,6 +36,9 @@ export const AppFooter = React.memo(
             <EncryptedIcon />
           )}
           <RecentFilesButton />
+          <Button onSelect={onPresent} style={{ width: "fit-content" }}>
+            {t("labels.present")}
+          </Button>
         </div>
       </Footer>
     );

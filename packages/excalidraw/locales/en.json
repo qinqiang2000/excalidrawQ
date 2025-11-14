@@ -88,6 +88,8 @@
     "language": "Language",
     "liveCollaboration": "Live collaboration...",
     "duplicateSelection": "Duplicate",
+    "duplicateSelectionIntoNextFrame": "Duplicate into next frame",
+    "present": "Present",
     "untitled": "Untitled",
     "name": "Name",
     "yourName": "Your name",

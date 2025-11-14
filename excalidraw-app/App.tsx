@@ -31,7 +31,7 @@ import {
   isDevEnv,
 } from "@excalidraw/common";
 import polyfill from "@excalidraw/excalidraw/polyfill";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadFromBlob } from "@excalidraw/excalidraw/data/blob";
 import { useCallbackRefState } from "@excalidraw/excalidraw/hooks/useCallbackRefState";
 import { t } from "@excalidraw/excalidraw/i18n";
@@ -73,6 +73,13 @@ import type {
 import type { ResolutionType } from "@excalidraw/common/utility-types";
 import type { ResolvablePromise } from "@excalidraw/common/utils";
 
+import { DuplicationHandler } from "./presentation/DuplicationHandler";
+import {
+  ELEMENTS_CHANNEL_NAME,
+  isPresentationLink,
+  NEED_DATA_MESSAGE,
+  Presentation,
+} from "./presentation/Presentation";
 import CustomStats from "./CustomStats";
 import {
   Provider,
@@ -424,6 +431,25 @@ const ExcalidrawWrapper = () => {
       }
       forceRefresh((prev) => !prev);
     }
+  }, [excalidrawAPI]);
+
+  useEffect(() => {
+    if (!excalidrawAPI) {
+      return;
+    }
+    const messageHandler = (event: MessageEvent<string>) => {
+      if (event.data === NEED_DATA_MESSAGE) {
+        channel.postMessage({
+          elements: excalidrawAPI.getSceneElements(),
+          appState: excalidrawAPI.getAppState(),
+        });
+      }
+    };
+    const channel = new BroadcastChannel(ELEMENTS_CHANNEL_NAME);
+    channel.addEventListener("message", messageHandler);
+    return () => {
+      channel.removeEventListener("message", messageHandler);
+    };
   }, [excalidrawAPI]);
 
   useEffect(() => {
@@ -1148,6 +1174,7 @@ const ExcalidrawWrapper = () => {
         {excalidrawAPI && !isCollabDisabled && (
           <Collab excalidrawAPI={excalidrawAPI} />
         )}
+        {excalidrawAPI && <DuplicationHandler excalidrawAPI={excalidrawAPI} />}
 
         <ShareDialog
           collabAPI={collabAPI}
@@ -1392,6 +1419,10 @@ const ExcalidrawWrapper = () => {
 const ExcalidrawApp = () => {
   const isCloudExportWindow =
     window.location.pathname === "/excalidraw-plus-export";
+  const presentation = useMemo(
+    () => isPresentationLink(window.location.href),
+    [],
+  );
   if (isCloudExportWindow) {
     return <ExcalidrawPlusIframeExport />;
   }
@@ -1399,7 +1430,7 @@ const ExcalidrawApp = () => {
   return (
     <TopErrorBoundary>
       <Provider store={appJotaiStore}>
-        <ExcalidrawWrapper />
+        {(!presentation && <ExcalidrawWrapper />) || <Presentation />}
       </Provider>
     </TopErrorBoundary>
   );

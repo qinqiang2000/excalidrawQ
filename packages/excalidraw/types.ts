@@ -570,6 +570,7 @@ export interface ExcalidrawProps {
   ) => JSX.Element | null;
   langCode?: Language["code"];
   viewModeEnabled?: boolean;
+  presentationModeEnabled?: boolean;
   zenModeEnabled?: boolean;
   gridModeEnabled?: boolean;
   objectsSnapModeEnabled?: boolean;

@@ -18,11 +18,27 @@ Excalidraw is a **monorepo** with a clear separation between the core library an
 
 ## Development Commands
 
+### Local Development (Port 3030)
+
 ```bash
+# 方法1：使用 yarn start（会读取 .env.development 中的端口配置）
+# 但由于环境变量优先级问题，推荐使用方法2
+yarn start
+
+# 方法2：直接指定端口启动（推荐）
+cd excalidraw-app
+yarn vite --port 3030
+
+# 其他命令
 yarn test:typecheck  # TypeScript type checking
 yarn test:update     # Run all tests (with snapshot updates)
 yarn fix             # Auto-fix formatting and linting issues
 ```
+
+**端口配置说明**:
+- **本地开发**: 使用 3030 端口（`.env.development` 中配置为 3030）
+- **生产部署**: 使用 3000 端口（`deploy-prod.sh` 中指定）
+- 如果 `yarn start` 仍然启动在 3000，请使用 `cd excalidraw-app && yarn vite --port 3030`
 
 ## Architecture Notes
 
@@ -32,4 +48,3 @@ yarn fix             # Auto-fix formatting and linting issues
 - Internal packages use path aliases (see `vitest.config.mts`)
 - Build system uses esbuild for packages, Vite for the app
 - TypeScript throughout with strict configuration
-- 用英文增加提示：应用已经加载形式长期运行在3000，请直接测试，不用启动
