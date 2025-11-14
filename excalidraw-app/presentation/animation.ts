@@ -1,4 +1,4 @@
-import { isTransparent } from "@excalidraw/common";
+import { isTransparent, easeOut } from "@excalidraw/common";
 import { isLinearElement } from "@excalidraw/excalidraw";
 
 import type {
@@ -72,10 +72,13 @@ const colorProgress = (
     return newColor;
   }
 
-  const r = Math.round(numericalProgress(oldRgba.r, newRgba.r, progress));
-  const g = Math.round(numericalProgress(oldRgba.g, newRgba.g, progress));
-  const b = Math.round(numericalProgress(oldRgba.b, newRgba.b, progress));
-  const a = Math.round(numericalProgress(oldRgba.a, newRgba.a, progress));
+  // Apply easing to color transitions - using linear progress directly
+  // to avoid double-easing since numericalProgress already applies easeOut
+  const easedProgress = easeOut(progress);
+  const r = Math.round(oldRgba.r + (newRgba.r - oldRgba.r) * easedProgress);
+  const g = Math.round(oldRgba.g + (newRgba.g - oldRgba.g) * easedProgress);
+  const b = Math.round(oldRgba.b + (newRgba.b - oldRgba.b) * easedProgress);
+  const a = Math.round(oldRgba.a + (newRgba.a - oldRgba.a) * easedProgress);
 
   return rgbaToHex({ r, g, b, a });
 };
@@ -91,11 +94,13 @@ const angleProgress = (
   } else if (diff < -Math.PI) {
     diff += 2 * Math.PI;
   }
-  return oldAngle + diff * progress;
+  // Apply easing for smooth rotation
+  return oldAngle + diff * easeOut(progress);
 };
 
+// Apply easing function for smoother, more natural animation
 const numericalProgress = (oldNum: number, newNum: number, progress: number) =>
-  oldNum + (newNum - oldNum) * progress;
+  oldNum + (newNum - oldNum) * easeOut(progress);
 
 const ANIMATABLE_PROPERTIES = new Map<
   keyof ExcalidrawElement | keyof ExcalidrawTextElement,
@@ -183,7 +188,13 @@ const progressAnimation = (
 };
 
 export let animationStartTime: number | null = null;
-const ANIMATION_DURATION_MS = 300;
+// Increased from 300ms to 500ms for smoother perception with easing
+const ANIMATION_DURATION_MS = 500;
+
+// Performance monitoring
+let frameCount = 0;
+let totalComputeTime = 0;
+let totalRenderTime = 0;
 
 export const animate = (
   timestamp: number,
@@ -193,9 +204,15 @@ export const animate = (
 ) => {
   if (!animationStartTime) {
     animationStartTime = timestamp;
+    frameCount = 0;
+    totalComputeTime = 0;
+    totalRenderTime = 0;
   }
   const elapsed = timestamp - animationStartTime;
   const progress = Math.min(elapsed / ANIMATION_DURATION_MS, 1);
+
+  // Start performance measurement
+  const computeStart = performance.now();
 
   const names = new Set([...oldElements.keys(), ...newElements.keys()]);
   const intermediateElements: ExcalidrawElement[] = [];
@@ -209,13 +226,44 @@ export const animate = (
     }
   }
 
+  const computeEnd = performance.now();
+  const computeTime = computeEnd - computeStart;
+  totalComputeTime += computeTime;
+
+  // Measure render time
+  const renderStart = performance.now();
   excalidrawAPI.updateScene({ elements: intermediateElements });
+  const renderEnd = performance.now();
+  const renderTime = renderEnd - renderStart;
+  totalRenderTime += renderTime;
+
+  frameCount++;
 
   if (progress < 1) {
     requestAnimationFrame((ts) =>
       animate(ts, excalidrawAPI, oldElements, newElements),
     );
   } else {
+    // Log performance stats when animation completes
+    console.log(
+      `[Presentation Performance] Animation completed:
+      - Total frames: ${frameCount}
+      - Duration: ${ANIMATION_DURATION_MS}ms
+      - Elements animated: ${names.size}
+      - Avg compute time per frame: ${(totalComputeTime / frameCount).toFixed(2)}ms
+      - Avg render time per frame: ${(totalRenderTime / frameCount).toFixed(2)}ms
+      - Total avg time per frame: ${((totalComputeTime + totalRenderTime) / frameCount).toFixed(2)}ms
+      - Target frame time (60fps): 16.67ms`,
+    );
+
+    // Warn if performance is poor
+    const avgFrameTime = (totalComputeTime + totalRenderTime) / frameCount;
+    if (avgFrameTime > 16.67) {
+      console.warn(
+        `[Presentation Performance] Animation may appear choppy! Avg frame time ${avgFrameTime.toFixed(2)}ms exceeds 16.67ms (60fps threshold)`,
+      );
+    }
+
     // Reset for the next animation
     animationStartTime = null;
   }
