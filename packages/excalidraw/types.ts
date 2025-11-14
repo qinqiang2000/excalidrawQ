@@ -442,6 +442,20 @@ export interface AppState {
   // as elements are unlocked, we remove the groupId from the elements
   // and also remove groupId from this map
   lockedMultiSelections: { [groupId: string]: true };
+
+  /** presentation mode state */
+  presentationMode: {
+    enabled: boolean;
+    frameIndex: number;
+    /** state to restore when exiting presentation mode */
+    previousState: {
+      selectedElementIds: AppState["selectedElementIds"];
+      scrollX: number;
+      scrollY: number;
+      zoom: Zoom;
+      frameRendering: AppState["frameRendering"];
+    } | null;
+  };
 }
 
 export type SearchMatch = {

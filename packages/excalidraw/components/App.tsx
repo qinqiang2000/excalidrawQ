@@ -1605,7 +1605,7 @@ class App extends React.Component<AppProps, AppState> {
                       <ExcalidrawActionManagerContext.Provider
                         value={this.actionManager}
                       >
-                        {!this.presentationModeEnabled && (
+                        {!this.presentationModeEnabled && !this.state.presentationMode.enabled && (
                           <LayerUI
                             canvas={this.canvas}
                             appState={this.state}
@@ -2787,6 +2787,40 @@ class App extends React.Component<AppProps, AppState> {
     this.updateEmbeddables();
     const elements = this.scene.getElementsIncludingDeleted();
     const elementsMap = this.scene.getElementsMapIncludingDeleted();
+
+    // Handle presentation mode frame changes
+    if (
+      this.state.presentationMode.enabled &&
+      prevState.presentationMode.frameIndex !== this.state.presentationMode.frameIndex
+    ) {
+      const frames = this.scene
+        .getNonDeletedElements()
+        .filter((e) => e.type === "frame");
+      const currentFrame = frames[this.state.presentationMode.frameIndex];
+      if (currentFrame) {
+        this.scrollToContent([currentFrame], {
+          fitToViewport: true,
+          animate: true,
+        });
+      }
+    }
+
+    // Auto-scroll to frame when entering presentation mode
+    if (
+      this.state.presentationMode.enabled &&
+      !prevState.presentationMode.enabled
+    ) {
+      const frames = this.scene
+        .getNonDeletedElements()
+        .filter((e) => e.type === "frame");
+      const currentFrame = frames[this.state.presentationMode.frameIndex];
+      if (currentFrame) {
+        this.scrollToContent([currentFrame], {
+          fitToViewport: true,
+          animate: true,
+        });
+      }
+    }
 
     if (!this.state.showWelcomeScreen && !elements.length) {
       this.setState({ showWelcomeScreen: true });
@@ -4155,6 +4189,11 @@ class App extends React.Component<AppProps, AppState> {
           const frames = this.scene
             .getNonDeletedElements()
             .filter((e) => e.type === "frame");
+
+          if (frames.length === 0) {
+            return;
+          }
+
           const selectedElementIds = this.state.selectedElementIds;
           const selectedFrames = this.scene
             .getSelectedElements({ selectedElementIds })
@@ -4164,10 +4203,99 @@ class App extends React.Component<AppProps, AppState> {
             const minY = Math.min(...selectedFrames.map((f) => f.y));
             frameIndex = frames.reduce((count, f) => count + (f.y < minY ? 1 : 0), 0);
           }
-          const newUrl = new URL(window.location.href);
-          newUrl.hash = `#presentation=${frameIndex}`;
-          window.open(newUrl.href, "_blank");
+
+          // Enter presentation mode in current window
+          this.setState({
+            presentationMode: {
+              enabled: true,
+              frameIndex,
+              previousState: {
+                selectedElementIds: this.state.selectedElementIds,
+                scrollX: this.state.scrollX,
+                scrollY: this.state.scrollY,
+                zoom: this.state.zoom,
+                frameRendering: this.state.frameRendering,
+              },
+            },
+            frameRendering: {
+              ...this.state.frameRendering,
+              outline: false,
+              name: false,
+            },
+          });
           return;
+        }
+
+        // Handle presentation mode navigation
+        if (this.state.presentationMode.enabled) {
+          // ESC key exits presentation mode
+          if (event.key === KEYS.ESCAPE) {
+            const previousState = this.state.presentationMode.previousState;
+            const frames = this.scene
+              .getNonDeletedElements()
+              .filter((e) => e.type === "frame");
+            const currentFrame = frames[this.state.presentationMode.frameIndex];
+
+            this.setState({
+              presentationMode: {
+                enabled: false,
+                frameIndex: 0,
+                previousState: null,
+              },
+              selectedElementIds: currentFrame
+                ? { [currentFrame.id]: true }
+                : previousState?.selectedElementIds || {},
+              scrollX: previousState?.scrollX ?? this.state.scrollX,
+              scrollY: previousState?.scrollY ?? this.state.scrollY,
+              zoom: previousState?.zoom ?? this.state.zoom,
+              frameRendering: previousState?.frameRendering ?? this.state.frameRendering,
+            });
+            return;
+          }
+
+          // Arrow keys navigate between frames
+          if (
+            event.key === KEYS.ARROW_RIGHT ||
+            event.key === KEYS.ARROW_DOWN
+          ) {
+            event.preventDefault();
+            const frames = this.scene
+              .getNonDeletedElements()
+              .filter((e) => e.type === "frame");
+            const newIndex = Math.min(
+              this.state.presentationMode.frameIndex + 1,
+              frames.length - 1,
+            );
+            if (newIndex !== this.state.presentationMode.frameIndex) {
+              this.setState({
+                presentationMode: {
+                  ...this.state.presentationMode,
+                  frameIndex: newIndex,
+                },
+              });
+            }
+            return;
+          }
+
+          if (
+            event.key === KEYS.ARROW_LEFT ||
+            event.key === KEYS.ARROW_UP
+          ) {
+            event.preventDefault();
+            const newIndex = Math.max(
+              this.state.presentationMode.frameIndex - 1,
+              0,
+            );
+            if (newIndex !== this.state.presentationMode.frameIndex) {
+              this.setState({
+                presentationMode: {
+                  ...this.state.presentationMode,
+                  frameIndex: newIndex,
+                },
+              });
+            }
+            return;
+          }
         }
 
         // ESC key exits zen mode

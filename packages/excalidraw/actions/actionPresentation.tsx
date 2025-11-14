@@ -11,6 +11,11 @@ export const actionPresent = register({
     const frames = app.scene
       .getNonDeletedElements()
       .filter((e) => e.type === "frame");
+
+    if (frames.length === 0) {
+      return { captureUpdate: CaptureUpdateAction.NEVER };
+    }
+
     const selectedElementIds = appState.selectedElementIds;
     const selectedFrames = app.scene
       .getSelectedElements({ selectedElementIds })
@@ -21,10 +26,28 @@ export const actionPresent = register({
       frameIndex = frames.reduce((count, f) => count + (f.y < minY ? 1 : 0), 0);
     }
 
-    const newUrl = new URL(window.location.href);
-    newUrl.hash = `#presentation=${frameIndex}`;
-    window.open(newUrl.href, "_blank");
-
-    return { captureUpdate: CaptureUpdateAction.NEVER };
+    // Enter presentation mode in current window
+    return {
+      appState: {
+        ...appState,
+        presentationMode: {
+          enabled: true,
+          frameIndex,
+          previousState: {
+            selectedElementIds: appState.selectedElementIds,
+            scrollX: appState.scrollX,
+            scrollY: appState.scrollY,
+            zoom: appState.zoom,
+            frameRendering: appState.frameRendering,
+          },
+        },
+        frameRendering: {
+          ...appState.frameRendering,
+          outline: false,
+          name: false,
+        },
+      },
+      captureUpdate: CaptureUpdateAction.NEVER,
+    };
   },
 });
