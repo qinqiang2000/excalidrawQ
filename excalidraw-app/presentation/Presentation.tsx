@@ -229,10 +229,10 @@ export function PresentationScene(props: {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       e.stopPropagation();
-      if (e.key === KEYS.ARROW_RIGHT) {
+      if (e.key === KEYS.ARROW_RIGHT || e.key === KEYS.ARROW_DOWN) {
         nextSlide();
       }
-      if (e.key === KEYS.ARROW_LEFT) {
+      if (e.key === KEYS.ARROW_LEFT || e.key === KEYS.ARROW_UP) {
         prevSlide();
       }
     };

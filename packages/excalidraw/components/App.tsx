@@ -4149,6 +4149,27 @@ class App extends React.Component<AppProps, AppState> {
       }
 
       if (!isInputLike(event.target)) {
+        // F5 key enters presentation mode
+        if (event.key === "F5") {
+          event.preventDefault();
+          const frames = this.scene
+            .getNonDeletedElements()
+            .filter((e) => e.type === "frame");
+          const selectedElementIds = this.state.selectedElementIds;
+          const selectedFrames = this.scene
+            .getSelectedElements({ selectedElementIds })
+            .filter((e) => e.type === "frame");
+          let frameIndex = 0;
+          if (selectedFrames.length !== 0) {
+            const minY = Math.min(...selectedFrames.map((f) => f.y));
+            frameIndex = frames.reduce((count, f) => count + (f.y < minY ? 1 : 0), 0);
+          }
+          const newUrl = new URL(window.location.href);
+          newUrl.hash = `#presentation=${frameIndex}`;
+          window.open(newUrl.href, "_blank");
+          return;
+        }
+
         // ESC key exits zen mode
         if (event.key === KEYS.ESCAPE && this.state.zenModeEnabled) {
           this.setState({ zenModeEnabled: false });
