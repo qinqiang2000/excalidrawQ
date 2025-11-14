@@ -2795,7 +2795,8 @@ class App extends React.Component<AppProps, AppState> {
     ) {
       const frames = this.scene
         .getNonDeletedElements()
-        .filter((e) => e.type === "frame");
+        .filter((e) => e.type === "frame")
+        .sort((e1, e2) => e1.y - e2.y);
       const currentFrame = frames[this.state.presentationMode.frameIndex];
       if (currentFrame) {
         this.scrollToContent([currentFrame], {
@@ -2812,7 +2813,8 @@ class App extends React.Component<AppProps, AppState> {
     ) {
       const frames = this.scene
         .getNonDeletedElements()
-        .filter((e) => e.type === "frame");
+        .filter((e) => e.type === "frame")
+        .sort((e1, e2) => e1.y - e2.y);
       const currentFrame = frames[this.state.presentationMode.frameIndex];
       if (currentFrame) {
         this.scrollToContent([currentFrame], {
@@ -4188,7 +4190,8 @@ class App extends React.Component<AppProps, AppState> {
           event.preventDefault();
           const frames = this.scene
             .getNonDeletedElements()
-            .filter((e) => e.type === "frame");
+            .filter((e) => e.type === "frame")
+            .sort((e1, e2) => e1.y - e2.y);
 
           if (frames.length === 0) {
             return;
@@ -4197,7 +4200,8 @@ class App extends React.Component<AppProps, AppState> {
           const selectedElementIds = this.state.selectedElementIds;
           const selectedFrames = this.scene
             .getSelectedElements({ selectedElementIds })
-            .filter((e) => e.type === "frame");
+            .filter((e) => e.type === "frame")
+            .sort((e1, e2) => e1.y - e2.y);
           let frameIndex = 0;
           if (selectedFrames.length !== 0) {
             const minY = Math.min(...selectedFrames.map((f) => f.y));
@@ -4233,7 +4237,8 @@ class App extends React.Component<AppProps, AppState> {
             const previousState = this.state.presentationMode.previousState;
             const frames = this.scene
               .getNonDeletedElements()
-              .filter((e) => e.type === "frame");
+              .filter((e) => e.type === "frame")
+              .sort((e1, e2) => e1.y - e2.y);
             const currentFrame = frames[this.state.presentationMode.frameIndex];
 
             this.setState({
@@ -4261,7 +4266,8 @@ class App extends React.Component<AppProps, AppState> {
             event.preventDefault();
             const frames = this.scene
               .getNonDeletedElements()
-              .filter((e) => e.type === "frame");
+              .filter((e) => e.type === "frame")
+              .sort((e1, e2) => e1.y - e2.y);
             const newIndex = Math.min(
               this.state.presentationMode.frameIndex + 1,
               frames.length - 1,

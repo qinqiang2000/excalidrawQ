@@ -6,6 +6,7 @@ import {
 } from "excalidraw-app/presentation/animation";
 import { KEYS, supportsResizeObserver } from "@excalidraw/common";
 import { isInitializedImageElement } from "@excalidraw/element/typeChecks";
+import { getCommonBounds } from "@excalidraw/element";
 
 import type {
   AppState,
@@ -109,6 +110,26 @@ export function PresentationScene(props: {
 
       const oldElementsMap = buildElementMap(oldFrameElements);
       const newElementsMap = buildElementMap(newFrameElements);
+
+      // Calculate the bounding box of the new frame elements to center the viewport
+      if (newFrameElements.length > 0) {
+        const [x1, y1, x2, y2] = getCommonBounds(newFrameElements);
+        const centerX = (x1 + x2) / 2;
+        const centerY = (y1 + y2) / 2;
+
+        // Calculate scroll position to center the frame content
+        // The frame dimensions are used to calculate the centered scroll position
+        const scrollX = newFrame.width / 2 - centerX;
+        const scrollY = newFrame.height / 2 - centerY;
+
+        // Update the viewport scroll position
+        excalidrawAPI.updateScene({
+          appState: {
+            scrollX,
+            scrollY,
+          },
+        });
+      }
 
       setFrameIndex(newFrameIndex);
       requestAnimationFrame((timestamp) =>
