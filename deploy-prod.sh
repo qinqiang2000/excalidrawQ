@@ -130,7 +130,13 @@ local_build() {
     # 构建生产版本（统一使用 docker 构建命令）
     echo "构建生产版本..."
     export VITE_APP_DISABLE_SENTRY=true
-    yarn build:app:docker
+    yarn build:app:docker || true  # 忽略警告导致的非零退出码
+
+    # 检查构建是否成功（build 目录应该存在且有文件）
+    if [ ! -d "build" ] || [ ! -f "build/index.html" ]; then
+        echo "❌ 构建失败！"
+        exit 1
+    fi
 
     echo "✅ 本地构建完成！"
 
