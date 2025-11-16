@@ -29,7 +29,7 @@ export const actionPresent = register({
       frameIndex = frames.reduce((count, f) => count + (f.y < minY ? 1 : 0), 0);
     }
 
-    // Enter presentation mode in current window
+    // Enter presentation mode in current window with fullscreen
     return {
       appState: {
         ...appState,

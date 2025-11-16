@@ -16,6 +16,7 @@ import type {
   ExcalidrawElement,
   ExcalidrawFrameElement,
   FileId,
+  NonDeletedExcalidrawElement,
 } from "@excalidraw/element/types";
 
 import { LocalData } from "../data/LocalData";
@@ -23,25 +24,9 @@ import { updateStaleImageStatuses } from "../data/FileManager";
 
 import "./Presentation.scss";
 
-const RE_PRESENTATION_LINK = /^#presentation=(\d+)$/;
-
-export const isPresentationLink = (link: string) => {
-  const hash = new URL(link).hash;
-  return RE_PRESENTATION_LINK.test(hash);
-};
-
-export const getFrameIndexFromLink = (link: string) => {
-  const hash = new URL(link).hash;
-  const match = hash.match(RE_PRESENTATION_LINK);
-  if (!match) {
-    throw new Error("Invalid match");
-  }
-  return parseInt(match[1]);
-};
-
 const getPositionedElementsForFrame = (
   frame: ExcalidrawFrameElement,
-  allElements: ExcalidrawElement[],
+  allElements: readonly ExcalidrawElement[],
 ) =>
   allElements
     .filter((e) => e.frameId === frame.id)
@@ -78,12 +63,13 @@ const buildElementMap = (
 };
 
 export function PresentationScene(props: {
-  elements: ExcalidrawElement[];
+  elements: readonly ExcalidrawElement[];
   appState: Readonly<AppState>;
-  frames: ExcalidrawFrameElement[];
+  frames: readonly ExcalidrawFrameElement[];
   initialFrameIndex?: number;
+  onExit?: () => void;
 }) {
-  const { appState, elements, frames, initialFrameIndex = 0 } = props;
+  const { appState, elements, frames, initialFrameIndex = 0, onExit } = props;
   const [loadedInitialFrame, setLoadedInitialFrame] = useState(false);
   const [frameIndex, setFrameIndex] = useState(initialFrameIndex);
 
@@ -136,6 +122,14 @@ export function PresentationScene(props: {
         }),
       0,
     );
+
+    // Enter fullscreen mode
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.warn("Could not enter fullscreen:", err);
+      });
+    }
+
     setLoadedInitialFrame(true);
   }, [
     appState,
@@ -229,6 +223,19 @@ export function PresentationScene(props: {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       e.stopPropagation();
+      if (e.key === KEYS.ESCAPE) {
+        // Exit fullscreen
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch((err) => {
+            console.warn("Could not exit fullscreen:", err);
+          });
+        }
+        // Exit presentation mode
+        if (onExit) {
+          onExit();
+        }
+        return;
+      }
       if (e.key === KEYS.ARROW_RIGHT || e.key === KEYS.ARROW_DOWN) {
         nextSlide();
       }
@@ -253,7 +260,7 @@ export function PresentationScene(props: {
       );
       document.removeEventListener("wheel", handlePointerDownOrWheel, true);
     };
-  }, [frameIndex, frames.length, nextSlide, prevSlide, renderFrame]);
+  }, [frameIndex, frames.length, nextSlide, prevSlide, renderFrame, onExit]);
 
   const loadExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
     setExcalidrawAPI(api);
@@ -286,30 +293,13 @@ export function PresentationScene(props: {
   );
 }
 
-export const ELEMENTS_CHANNEL_NAME = "excalidraw-elements";
-export const NEED_DATA_MESSAGE = "NEED_DATA";
-
-export function Presentation() {
-  const [elements, setElements] = useState<ExcalidrawElement[]>([]);
-  const [appState, setAppState] = useState<Readonly<AppState | null>>();
-  useEffect(() => {
-    const channel = new BroadcastChannel(ELEMENTS_CHANNEL_NAME);
-    const messageHandler = (
-      event: MessageEvent<
-        { elements: ExcalidrawElement[]; appState: Readonly<AppState> } | string
-      >,
-    ) => {
-      if (typeof event.data !== "string") {
-        setAppState(event.data.appState);
-        setElements(event.data.elements);
-      }
-    };
-    channel.addEventListener("message", messageHandler);
-    channel.postMessage(NEED_DATA_MESSAGE);
-    return () => {
-      channel.removeEventListener("message", messageHandler);
-    };
-  }, []);
+export function Presentation(props: {
+  elements: readonly NonDeletedExcalidrawElement[];
+  appState: Readonly<AppState>;
+  initialFrameIndex?: number;
+  onExit?: () => void;
+}) {
+  const { elements, appState, initialFrameIndex = 0, onExit } = props;
 
   const frames = useMemo(() => {
     const res = elements.filter(
@@ -318,28 +308,26 @@ export function Presentation() {
     res.sort((e1, e2) => e1.y - e2.y);
     return res;
   }, [elements]);
-  if (frames.length === 0 || !appState) {
+
+  if (frames.length === 0) {
     return (
       <div>
-        <h1>Blank presentation</h1>
-        <p>
-          Learn how to make a presentation{" "}
-          <a href="https://github.com/excalidraw-smart-presentation/excalidraw-smart-presentation.github.io?tab=readme-ov-file#excalidraw-smart-presentation">
-            here
-          </a>
-        </p>
+        <h1>No frames found</h1>
+        <p>Please create at least one frame to start presentation mode.</p>
       </div>
     );
   }
-  const frameIndex = getFrameIndexFromLink(window.location.href);
-  const initialFrameIndex =
-    frameIndex < 0 || frameIndex >= frames.length ? 0 : frameIndex;
+
+  const safeFrameIndex =
+    initialFrameIndex < 0 || initialFrameIndex >= frames.length ? 0 : initialFrameIndex;
+
   return (
     <PresentationScene
       appState={appState}
       elements={elements}
       frames={frames}
-      initialFrameIndex={initialFrameIndex}
+      initialFrameIndex={safeFrameIndex}
+      onExit={onExit}
     />
   );
 }

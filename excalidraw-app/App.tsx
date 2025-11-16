@@ -74,12 +74,7 @@ import type { ResolutionType } from "@excalidraw/common/utility-types";
 import type { ResolvablePromise } from "@excalidraw/common/utils";
 
 import { DuplicationHandler } from "./presentation/DuplicationHandler";
-import {
-  ELEMENTS_CHANNEL_NAME,
-  isPresentationLink,
-  NEED_DATA_MESSAGE,
-  Presentation,
-} from "./presentation/Presentation";
+import { Presentation } from "./presentation/Presentation";
 import CustomStats from "./CustomStats";
 import {
   Provider,
@@ -358,6 +353,12 @@ const initializeScene = async (opts: {
 const ExcalidrawWrapper = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const isCollabDisabled = isRunningInIframe();
+  const [presentationData, setPresentationData] = useState<{
+    enabled: boolean;
+    elements: readonly NonDeletedExcalidrawElement[];
+    appState: AppState;
+    frameIndex: number;
+  } | null>(null);
 
   // Initialize session manager early in the component lifecycle
   useEffect(() => {
@@ -433,24 +434,6 @@ const ExcalidrawWrapper = () => {
     }
   }, [excalidrawAPI]);
 
-  useEffect(() => {
-    if (!excalidrawAPI) {
-      return;
-    }
-    const messageHandler = (event: MessageEvent<string>) => {
-      if (event.data === NEED_DATA_MESSAGE) {
-        channel.postMessage({
-          elements: excalidrawAPI.getSceneElements(),
-          appState: excalidrawAPI.getAppState(),
-        });
-      }
-    };
-    const channel = new BroadcastChannel(ELEMENTS_CHANNEL_NAME);
-    channel.addEventListener("message", messageHandler);
-    return () => {
-      channel.removeEventListener("message", messageHandler);
-    };
-  }, [excalidrawAPI]);
 
   useEffect(() => {
     if (!excalidrawAPI || (!isCollabDisabled && !collabAPI)) {
@@ -758,11 +741,26 @@ const ExcalidrawWrapper = () => {
     };
   }, [excalidrawAPI]);
 
+
   const onChange = (
     elements: readonly OrderedExcalidrawElement[],
     appState: AppState,
     files: BinaryFiles,
   ) => {
+    // Handle presentation mode state
+    if (appState.presentationMode?.enabled) {
+      setPresentationData({
+        enabled: true,
+        elements: elements.filter(el => !el.isDeleted) as readonly NonDeletedExcalidrawElement[],
+        appState,
+        frameIndex: appState.presentationMode.frameIndex,
+      });
+      return; // Don't save to localStorage when in presentation mode
+    } else if (presentationData?.enabled) {
+      // Exiting presentation mode
+      setPresentationData(null);
+    }
+
     // console.log('🔄 onChange 触发:', {
     //   elementCount: elements.length,
     //   nonDeletedElements: elements.filter(el => !el.isDeleted).length,
@@ -1048,6 +1046,37 @@ const ExcalidrawWrapper = () => {
       );
     },
   };
+
+  // Render presentation mode if enabled
+  if (presentationData?.enabled) {
+    return (
+      <Presentation
+        elements={presentationData.elements}
+        appState={presentationData.appState}
+        initialFrameIndex={presentationData.frameIndex}
+        onExit={() => {
+          if (excalidrawAPI && presentationData.appState.presentationMode?.previousState) {
+            const prevState = presentationData.appState.presentationMode.previousState;
+            excalidrawAPI.updateScene({
+              appState: {
+                presentationMode: {
+                  enabled: false,
+                  frameIndex: 0,
+                  previousState: null,
+                },
+                scrollX: prevState.scrollX,
+                scrollY: prevState.scrollY,
+                zoom: prevState.zoom,
+                frameRendering: prevState.frameRendering,
+                selectedElementIds: prevState.selectedElementIds,
+              },
+            });
+          }
+          setPresentationData(null);
+        }}
+      />
+    );
+  }
 
   return (
     <div
@@ -1419,10 +1448,7 @@ const ExcalidrawWrapper = () => {
 const ExcalidrawApp = () => {
   const isCloudExportWindow =
     window.location.pathname === "/excalidraw-plus-export";
-  const presentation = useMemo(
-    () => isPresentationLink(window.location.href),
-    [],
-  );
+
   if (isCloudExportWindow) {
     return <ExcalidrawPlusIframeExport />;
   }
@@ -1430,7 +1456,7 @@ const ExcalidrawApp = () => {
   return (
     <TopErrorBoundary>
       <Provider store={appJotaiStore}>
-        {(!presentation && <ExcalidrawWrapper />) || <Presentation />}
+        <ExcalidrawWrapper />
       </Provider>
     </TopErrorBoundary>
   );
