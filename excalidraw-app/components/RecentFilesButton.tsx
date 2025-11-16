@@ -165,8 +165,6 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
   }, [isOpenedByKeyboard, isOpen, recentFiles.length]);
 
   const handleFileSelect = (file: RecentFile) => {
-    console.log('🖱️ 点击最近文件:', { id: file.id, name: file.name });
-
     // 检查 excalidrawAPI 是否可用
     const api = (window as any).excalidrawAPI;
     if (!api) {
@@ -177,15 +175,8 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
 
     // 加载临时场景数据
     const sceneData = LocalData.loadTemporaryScene(file.id);
-    console.log('📂 场景数据加载结果:', sceneData ? '成功' : '失败');
 
     if (sceneData) {
-      console.log('📊 场景数据详情:', {
-        elements: sceneData.elements?.length || 0,
-        appState: Object.keys(sceneData.appState || {}),
-        files: Object.keys(sceneData.files || {}).length
-      });
-
       try {
         // 使用 excalidrawAPI 加载场景
         api.updateScene({
@@ -201,7 +192,6 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
           api.addFiles(Object.values(sceneData.files));
         }
 
-        console.log('✅ 场景加载完成:', file.name);
         setIsOpen(false); // 加载成功后关闭菜单
       } catch (error) {
         console.error('❌ 场景加载失败:', error);

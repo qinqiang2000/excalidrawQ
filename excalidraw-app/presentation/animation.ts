@@ -244,18 +244,6 @@ export const animate = (
       animate(ts, excalidrawAPI, oldElements, newElements),
     );
   } else {
-    // Log performance stats when animation completes
-    console.log(
-      `[Presentation Performance] Animation completed:
-      - Total frames: ${frameCount}
-      - Duration: ${ANIMATION_DURATION_MS}ms
-      - Elements animated: ${names.size}
-      - Avg compute time per frame: ${(totalComputeTime / frameCount).toFixed(2)}ms
-      - Avg render time per frame: ${(totalRenderTime / frameCount).toFixed(2)}ms
-      - Total avg time per frame: ${((totalComputeTime + totalRenderTime) / frameCount).toFixed(2)}ms
-      - Target frame time (60fps): 16.67ms`,
-    );
-
     // Warn if performance is poor
     const avgFrameTime = (totalComputeTime + totalRenderTime) / frameCount;
     if (avgFrameTime > 16.67) {
