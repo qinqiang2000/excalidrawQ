@@ -139,6 +139,21 @@ export function PresentationScene(props: {
     renderFrame,
   ]);
 
+  // Monitor fullscreen changes and exit presentation when user exits fullscreen
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      // If user exits fullscreen (by pressing ESC or clicking browser button)
+      if (!document.fullscreenElement && onExit) {
+        onExit();
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [onExit]);
+
   // Load files (e.g, images) on elements change
   useEffect(() => {
     if (!excalidrawAPI) {
@@ -224,15 +239,16 @@ export function PresentationScene(props: {
     const handleKeyDown = (e: KeyboardEvent) => {
       e.stopPropagation();
       if (e.key === KEYS.ESCAPE) {
-        // Exit fullscreen
+        // Exit fullscreen (this will trigger fullscreenchange event, which calls onExit)
         if (document.fullscreenElement) {
           document.exitFullscreen().catch((err) => {
             console.warn("Could not exit fullscreen:", err);
           });
-        }
-        // Exit presentation mode
-        if (onExit) {
-          onExit();
+        } else {
+          // Fallback: if not in fullscreen, exit presentation mode directly
+          if (onExit) {
+            onExit();
+          }
         }
         return;
       }

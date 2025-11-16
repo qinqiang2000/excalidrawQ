@@ -6,7 +6,7 @@ import {
   reconcileElements,
 } from "@excalidraw/excalidraw";
 import { trackEvent } from "@excalidraw/excalidraw/analytics";
-import { getDefaultAppState } from "@excalidraw/excalidraw/appState";
+import { getDefaultAppState, clearAppStateForLocalStorage } from "@excalidraw/excalidraw/appState";
 import {
   CommandPalette,
   DEFAULT_CATEGORIES,
@@ -46,7 +46,7 @@ import {
   share,
   youtubeIcon,
 } from "@excalidraw/excalidraw/components/icons";
-import { isElementLink } from "@excalidraw/element";
+import { isElementLink, clearElementsForLocalStorage } from "@excalidraw/element";
 import { restore, restoreAppState } from "@excalidraw/excalidraw/data/restore";
 import { newElementWith } from "@excalidraw/element";
 import { isInitializedImageElement } from "@excalidraw/element";
@@ -89,6 +89,8 @@ import {
   isPWAMode,
   SYNC_BROWSER_TABS_TIMEOUT,
   generateUniqueSessionId,
+  STORAGE_KEYS,
+  getSessionStorageKey,
 } from "./app_constants";
 import Collab, {
   collabAPIAtom,
@@ -358,6 +360,10 @@ const ExcalidrawWrapper = () => {
     elements: readonly NonDeletedExcalidrawElement[];
     appState: AppState;
     frameIndex: number;
+    // Save original scene data to restore after exiting presentation
+    originalElements: readonly OrderedExcalidrawElement[];
+    originalAppState: AppState;
+    originalFiles: BinaryFiles;
   } | null>(null);
 
   // Initialize session manager early in the component lifecycle
@@ -415,7 +421,6 @@ const ExcalidrawWrapper = () => {
     // 将 excalidrawAPI 设置到 window 对象上，供其他组件使用
     if (excalidrawAPI) {
       (window as any).excalidrawAPI = excalidrawAPI;
-      console.log('✅ excalidrawAPI 已设置到 window 对象');
     } else {
       (window as any).excalidrawAPI = null;
     }
@@ -510,6 +515,13 @@ const ExcalidrawWrapper = () => {
     initializeScene({ collabAPI, excalidrawAPI }).then(async (data) => {
       loadImages(data, /* isInitialLoad */ true);
       initialStatePromiseRef.current.promise.resolve(data.scene);
+      // Clear presentation data when loading new scene
+      console.log('📂 初始加载场景:', {
+        elementCount: data.scene?.elements?.length,
+        appStateName: data.scene?.appState?.name,
+        firstElementId: data.scene?.elements?.[0]?.id?.slice(0, 8),
+      });
+      setPresentationData(null);
     });
 
     // Handle PWA file launching via launchQueue
@@ -602,6 +614,9 @@ const ExcalidrawWrapper = () => {
 
         initializeScene({ collabAPI, excalidrawAPI }).then((data) => {
           loadImages(data);
+          // Clear presentation data when loading new scene
+          console.log('📂 hashchange 加载新场景，清除 presentationData');
+          setPresentationData(null);
           if (data.scene) {
             excalidrawAPI.updateScene({
               ...data.scene,
@@ -748,17 +763,36 @@ const ExcalidrawWrapper = () => {
     files: BinaryFiles,
   ) => {
     // Handle presentation mode state
-    if (appState.presentationMode?.enabled) {
+    if (appState.presentationMode?.enabled && !presentationData?.enabled) {
+      // Entering presentation mode - save original scene data
+      console.log('🎭 进入演示模式，保存场景:', {
+        name: appState.name,
+        elementCount: elements.length,
+        firstElementId: elements[0]?.id?.slice(0, 8),
+      });
       setPresentationData({
         enabled: true,
         elements: elements.filter(el => !el.isDeleted) as readonly NonDeletedExcalidrawElement[],
         appState,
         frameIndex: appState.presentationMode.frameIndex,
+        originalElements: elements,
+        originalAppState: appState,
+        originalFiles: files,
       });
       return; // Don't save to localStorage when in presentation mode
-    } else if (presentationData?.enabled) {
-      // Exiting presentation mode
-      setPresentationData(null);
+    } else if (appState.presentationMode?.enabled && presentationData?.enabled) {
+      // Already in presentation mode, just update frame index if changed
+      if (presentationData.frameIndex !== appState.presentationMode.frameIndex) {
+        setPresentationData({
+          ...presentationData,
+          frameIndex: appState.presentationMode.frameIndex,
+        });
+      }
+      return;
+    } else if (!appState.presentationMode?.enabled && presentationData?.enabled) {
+      // Exiting presentation mode - keep presentationData for restoration
+      // Will be cleared after Excalidraw component re-initializes
+      return;
     }
 
     // console.log('🔄 onChange 触发:', {
@@ -1055,23 +1089,50 @@ const ExcalidrawWrapper = () => {
         appState={presentationData.appState}
         initialFrameIndex={presentationData.frameIndex}
         onExit={() => {
-          if (excalidrawAPI && presentationData.appState.presentationMode?.previousState) {
-            const prevState = presentationData.appState.presentationMode.previousState;
-            excalidrawAPI.updateScene({
-              appState: {
-                presentationMode: {
-                  enabled: false,
-                  frameIndex: 0,
-                  previousState: null,
-                },
-                scrollX: prevState.scrollX,
-                scrollY: prevState.scrollY,
-                zoom: prevState.zoom,
-                frameRendering: prevState.frameRendering,
-                selectedElementIds: prevState.selectedElementIds,
-              },
-            });
+          // Save original data to localStorage so new Excalidraw component loads it
+          console.log('🚪 退出演示模式，保存到 localStorage', {
+            name: presentationData.originalAppState.name,
+            elementCount: presentationData.originalElements.length,
+          });
+
+          const restoredAppState = {
+            ...presentationData.originalAppState,
+            presentationMode: {
+              enabled: false,
+              frameIndex: 0,
+              previousState: null,
+            },
+            // Restore frameRendering from previousState if available
+            frameRendering: presentationData.originalAppState.presentationMode?.previousState?.frameRendering ||
+                           presentationData.originalAppState.frameRendering,
+          };
+
+          try {
+            localStorage.setItem(
+              getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS),
+              JSON.stringify(clearElementsForLocalStorage(presentationData.originalElements))
+            );
+            localStorage.setItem(
+              getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_APP_STATE),
+              JSON.stringify(clearAppStateForLocalStorage(restoredAppState))
+            );
+            console.log('✅ 数据已保存到 localStorage');
+          } catch (error) {
+            console.error('❌ 保存到 localStorage 失败:', error);
           }
+
+          // Reset initialStatePromiseRef to a new promise that resolves with restored data
+          // This ensures the new Excalidraw component gets the correct initial data
+          const newPromise = resolvablePromise<ExcalidrawInitialDataState | null>();
+          newPromise.resolve({
+            elements: presentationData.originalElements,
+            appState: restoredAppState,
+            files: presentationData.originalFiles,
+          });
+          initialStatePromiseRef.current.promise = newPromise;
+          console.log('🔄 重置 initialStatePromiseRef');
+
+          // Clear presentation data to switch back to main Excalidraw
           setPresentationData(null);
         }}
       />
