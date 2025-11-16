@@ -1,5 +1,0 @@
-{
-  "lastCommit": "6b7e5fe613358d6ba148d6fe025eb0ab174a3b39",
-  "buildTime": "2025-11-16T09:13:09Z",
-  "buildCommand": "yarn build:app:docker"
-}
