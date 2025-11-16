@@ -1,5 +1,5 @@
 {
-  "lastCommit": "2f07c7b5a4c7c5e5e3f8f0e3f8f0e3f8f0e3f8f0",
-  "buildTime": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "lastCommit": "6b7e5fe613358d6ba148d6fe025eb0ab174a3b39",
+  "buildTime": "2025-11-16T09:13:09Z",
   "buildCommand": "yarn build:app:docker"
 }
