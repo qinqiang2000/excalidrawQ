@@ -158,8 +158,8 @@ upload_code_only() {
     tar -czf /tmp/excalidraw-code.tar.gz .
     echo "压缩包大小: $(du -sh /tmp/excalidraw-code.tar.gz | cut -f1)"
     
-    # 上传压缩包
-    scp -i ~/tools/pem/ty_sg01.pem /tmp/excalidraw-code.tar.gz root@129.226.88.226:/tmp/
+    # 上传压缩包（使用 rsync 替代 scp，更稳定且支持断点续传）
+    rsync -avz --progress -e "ssh -i ~/tools/pem/ty_sg01.pem" /tmp/excalidraw-code.tar.gz root@129.226.88.226:/tmp/
     
     # 清理本地临时文件
     rm -rf /tmp/excalidraw-deploy /tmp/excalidraw-code.tar.gz
