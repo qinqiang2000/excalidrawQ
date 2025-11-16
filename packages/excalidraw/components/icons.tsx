@@ -2273,10 +2273,12 @@ export const elementLinkIcon = createIcon(
 export const presentIcon = createIcon(
   <g strokeWidth={1.5}>
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-    <rect x="3" y="3" width="18" height="14" />
-    <polygon points="10,7 14,10 10,13" />
-    <line x1="12" y1="17" x2="12" y2="22" />
-    <line x1="7" y1="22" x2="17" y2="22" />
+    <line x1="2" y1="4" x2="22" y2="4" />
+    <rect x="4" y="4" width="16" height="12" />
+    <line x1="8" y1="10" x2="16" y2="10" />
+    <polygon points="12,20 9,17 15,17" fill="currentColor" stroke="none" />
+    <line x1="12" y1="16" x2="12" y2="17" />
+    <line x1="9" y1="21" x2="15" y2="21" />
   </g>,
   tablerIconProps,
 );

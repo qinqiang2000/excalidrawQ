@@ -168,11 +168,7 @@ deploy_on_server() {
         nvm use 22
         
         echo "当前 Node.js 版本: $(node --version)"
-        
-        # 进入项目目录并更新代码
-        cd /root/excalidrawQ
-        git pull excalidrawQ qiang
-        
+
         # 停止现有服务
         echo "停止现有服务..."
         pkill -f "http-server" || true

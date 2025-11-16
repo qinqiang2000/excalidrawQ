@@ -4,6 +4,7 @@ import { useI18n } from "@excalidraw/excalidraw/i18n";
 import { useExcalidrawActionManager } from "@excalidraw/excalidraw/components/App";
 import { actionPresent } from "@excalidraw/excalidraw/actions";
 import { getShortcutFromShortcutName } from "@excalidraw/excalidraw/actions/shortcuts";
+import { presentIcon } from "@excalidraw/excalidraw/components/icons";
 
 import { isExcalidrawPlusSignedUser } from "../app_constants";
 
@@ -47,7 +48,7 @@ export const AppFooter = React.memo(
             style={{ width: "fit-content" }}
             title={presentTooltip}
           >
-            {t("labels.present")}
+            {presentIcon}
           </Button>
         </div>
       </Footer>
