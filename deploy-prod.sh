@@ -143,28 +143,18 @@ local_build() {
 
 # 快速上传代码文件 (排除字体)
 upload_code_only() {
-    echo "🚀 上传代码文件到服务器 (排除字体)..."
-    
-    # 创建临时目录，复制除字体外的所有文件
-    mkdir -p /tmp/excalidraw-deploy
-    rsync -av --exclude='fonts/' excalidraw-app/build/ /tmp/excalidraw-deploy/
-    
-    # 显示上传文件大小
-    echo "代码文件大小: $(du -sh /tmp/excalidraw-deploy | cut -f1)"
-    
-    # 使用 tar 压缩上传
-    echo "📦 压缩并上传..."
-    cd /tmp/excalidraw-deploy
-    tar -czf /tmp/excalidraw-code.tar.gz .
-    echo "压缩包大小: $(du -sh /tmp/excalidraw-code.tar.gz | cut -f1)"
-    
-    # 上传压缩包（使用 rsync 替代 scp，更稳定且支持断点续传）
-    rsync -avz --progress -e "ssh -i ~/tools/pem/ty_sg01.pem" /tmp/excalidraw-code.tar.gz root@129.226.88.226:/tmp/
-    
-    # 清理本地临时文件
-    rm -rf /tmp/excalidraw-deploy /tmp/excalidraw-code.tar.gz
-    
-    echo "✅ 代码文件上传完成！"
+    echo "🚀 增量同步代码到服务器 (排除字体)..."
+
+    # 显示本地构建文件大小
+    echo "本地构建文件: $(du -sh excalidraw-app/build | cut -f1)"
+
+    # 直接 rsync 增量同步到服务器，只传输变化的文件
+    rsync -avz --progress --delete \
+        --exclude='fonts/' \
+        -e "ssh -i ~/tools/pem/ty_sg01.pem" \
+        excalidraw-app/build/ root@129.226.88.226:/var/www/excalidraw/
+
+    echo "✅ 代码文件同步完成！"
 }
 
 # 服务器部署
@@ -197,13 +187,9 @@ deploy_on_server() {
             echo "⚠️ 后端服务未运行，分享功能可能不可用"
         fi
         
-        # 创建部署目录
+        # 确保部署目录存在（rsync 已直接同步文件到此目录）
         mkdir -p /var/www/excalidraw
-
-        # 解压新的代码文件
-        echo "解压新代码文件..."
         cd /var/www/excalidraw
-        tar -xzf /tmp/excalidraw-code.tar.gz
 
         # 设置正确的权限
         chown -R caddy:caddy /var/www/excalidraw
@@ -258,9 +244,6 @@ deploy_on_server() {
         # 显示系统状态
         echo "📊 服务器状态："
         free -h
-
-        # 清理临时文件
-        rm -f /tmp/excalidraw-code.tar.gz
 
         # 检查总体状态
         if [ "$FRONTEND_OK" = true ] && [ "$BACKEND_OK" = true ]; then
