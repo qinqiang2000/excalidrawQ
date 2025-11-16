@@ -223,10 +223,21 @@ export function PresentationScene(props: {
   }, [excalidrawAPI, scale]);
 
   const nextSlide = useCallback(() => {
-    if (animationStartTime === null && frameIndex !== frames.length - 1) {
-      renderFrame(frameIndex + 1);
+    if (animationStartTime === null) {
+      if (frameIndex !== frames.length - 1) {
+        renderFrame(frameIndex + 1);
+      } else {
+        // 最后一页，执行与 ESC 相同的退出逻辑
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch((err) => {
+            console.warn("Could not exit fullscreen:", err);
+          });
+        } else if (onExit) {
+          onExit();
+        }
+      }
     }
-  }, [frameIndex, frames.length, renderFrame]);
+  }, [frameIndex, frames.length, renderFrame, onExit]);
 
   const prevSlide = useCallback(() => {
     if (animationStartTime === null && frameIndex !== 0) {

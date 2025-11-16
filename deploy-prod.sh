@@ -170,111 +170,59 @@ upload_code_only() {
 # 服务器部署
 deploy_on_server() {
     echo "📡 SSH 到服务器并部署..."
-    ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 << 'EOF'
-        # 加载环境
-        source ~/.zshrc
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
-        nvm use 22
-        
-        echo "当前 Node.js 版本: $(node --version)"
-        
-        # 进入项目目录并更新代码
-        cd /root/excalidrawQ
-        git pull excalidrawQ qiang
-        
-        # 停止现有服务
-        echo "停止现有服务..."
-        pkill -f "http-server" || true
-        pkill -f "vite" || true
-        sleep 2
 
-        # 检查后端服务
-        echo "检查分享功能后端服务..."
-        if lsof -i :3002 > /dev/null 2>&1; then
-            echo "✅ 后端服务已运行（端口 3002）"
-        else
-            echo "⚠️ 后端服务未运行，分享功能可能不可用"
-        fi
-        
-        # 创建部署目录
-        mkdir -p /var/www/excalidraw
+    local SSH_CMD="ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226"
 
-        # 解压新的代码文件
-        echo "解压新代码文件..."
-        cd /var/www/excalidraw
-        tar -xzf /tmp/excalidraw-code.tar.gz
+    # 步骤1: 停止现有服务
+    echo "1. 停止现有服务..."
+    $SSH_CMD 'pkill -f "http-server" || true; pkill -f "vite" || true; sleep 2'
 
-        # 设置正确的权限
-        chown -R caddy:caddy /var/www/excalidraw
+    # 步骤2: 解压新文件
+    echo "2. 解压新代码文件..."
+    $SSH_CMD 'mkdir -p /var/www/excalidraw && cd /var/www/excalidraw && tar -xzf /tmp/excalidraw-code.tar.gz && chown -R caddy:caddy /var/www/excalidraw'
 
-        # 创建字体目录链接 (如果不存在)
-        if [ ! -L "fonts" ] && [ -d "/root/excalidraw-fonts" ]; then
-            ln -s /root/excalidraw-fonts fonts
-            echo "✅ 创建字体目录链接"
-        fi
-        
-        # 进入应用目录并创建构建目录链接
-        cd /root/excalidrawQ/excalidraw-app
-        if [ ! -L "build" ]; then
-            rm -rf build
-            ln -s /var/www/excalidraw build
-            echo "✅ 创建构建目录链接"
-        fi
-        
-        # 启动生产服务器
-        echo "启动生产服务器..."
-        nohup npx http-server build -a 0.0.0.0 -p 3000 --cors -c-1 > /var/log/excalidraw-prod.log 2>&1 &
-        
-        # 等待启动
-        sleep 5
-        
-        # 检查服务状态
-        echo "🔍 检查所有服务状态..."
-        FRONTEND_OK=false
-        BACKEND_OK=false
+    # 步骤3: 确保链接存在
+    echo "3. 检查目录链接..."
+    $SSH_CMD 'cd /var/www/excalidraw && [ ! -L "fonts" ] && [ -d "/root/excalidraw-fonts" ] && ln -s /root/excalidraw-fonts fonts || true'
+    $SSH_CMD 'cd /root/excalidrawQ/excalidraw-app && [ ! -L "build" ] && rm -rf build && ln -s /var/www/excalidraw build || true'
 
-        # 检查前端服务
-        if pgrep -f "http-server" > /dev/null; then
-            echo "✅ 前端服务器启动成功！"
-            netstat -tuln | grep 3000 && echo "✅ 端口 3000 正在监听" || echo "⚠️ 端口 3000 未监听"
-            FRONTEND_OK=true
-        else
-            echo "❌ 前端服务启动失败！"
-            echo "错误日志："
-            tail -20 /var/log/excalidraw-prod.log
-        fi
+    # 步骤4: 启动服务
+    echo "4. 启动生产服务器..."
+    $SSH_CMD 'source ~/.zshrc && export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh" && nvm use 22 && cd /root/excalidrawQ/excalidraw-app && nohup npx http-server build -a 0.0.0.0 -p 3000 --cors -c-1 > /var/log/excalidraw-prod.log 2>&1 &'
 
-        # 检查后端服务
-        if lsof -i :3002 > /dev/null 2>&1; then
-            echo "✅ 后端服务运行正常！"
-            netstat -tuln | grep 3002 && echo "✅ 端口 3002 正在监听" || echo "⚠️ 端口 3002 未监听"
-            BACKEND_OK=true
-        else
-            echo "❌ 后端服务未运行！"
-            echo "端口 3002 未被占用，分享功能不可用"
-        fi
+    sleep 5
 
-        # 显示系统状态
-        echo "📊 服务器状态："
-        free -h
+    # 步骤5: 检查服务状态
+    echo "5. 检查服务状态..."
+    local FRONTEND_STATUS=$($SSH_CMD 'pgrep -f "http-server" > /dev/null && echo "OK" || echo "FAIL"')
+    local BACKEND_STATUS=$($SSH_CMD 'lsof -i :3002 > /dev/null 2>&1 && echo "OK" || echo "FAIL"')
+    local PORT_3000=$($SSH_CMD 'netstat -tuln | grep -q ":3000 " && echo "OK" || echo "FAIL"')
 
-        # 清理临时文件
-        rm -f /tmp/excalidraw-code.tar.gz
+    # 清理临时文件
+    $SSH_CMD 'rm -f /tmp/excalidraw-code.tar.gz'
 
-        # 检查总体状态
-        if [ "$FRONTEND_OK" = true ] && [ "$BACKEND_OK" = true ]; then
-            echo "🎉 所有服务启动成功！"
-            echo "🌐 访问地址: https://excalidrawx.duckdns.org"
-            echo "🔗 分享功能已启用"
-        elif [ "$FRONTEND_OK" = true ]; then
-            echo "⚠️ 前端正常，但后端服务异常（分享功能可能不可用）"
-            exit 1
-        else
-            echo "❌ 部署失败！"
-            exit 1
-        fi
-EOF
+    # 显示结果
+    echo ""
+    echo "🔍 服务状态检查:"
+    if [ "$FRONTEND_STATUS" = "OK" ] && [ "$PORT_3000" = "OK" ]; then
+        echo "✅ 前端服务启动成功 (端口 3000)"
+    else
+        echo "❌ 前端服务启动失败"
+        $SSH_CMD 'tail -20 /var/log/excalidraw-prod.log'
+        exit 1
+    fi
+
+    if [ "$BACKEND_STATUS" = "OK" ]; then
+        echo "✅ 后端服务运行正常 (端口 3002)"
+        echo ""
+        echo "🎉 所有服务启动成功！"
+        echo "🌐 访问地址: https://excalidrawx.duckdns.org"
+        echo "🔗 分享功能已启用"
+    else
+        echo "⚠️ 后端服务未运行 (分享功能可能不可用)"
+        echo ""
+        echo "⚠️ 前端正常，但后端服务异常"
+    fi
 }
 
 # 执行部署流程

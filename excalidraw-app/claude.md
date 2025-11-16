@@ -52,3 +52,24 @@
 - **存储策略**: localStorage + IndexedDB 混合存储
 - **同步机制**: 基于时间戳的版本控制同步多标签页
 - **防抖保存**: 300ms 延迟批量保存优化性能
+
+## 演示模式 (Presentation)
+
+### 文件结构
+- **核心组件**: `presentation/Presentation.tsx` - 全屏演示视图
+- **动画逻辑**: `presentation/animation.ts` - 幻灯片过渡动画
+- **入口 Action**: `packages/excalidraw/actions/actionPresentation.tsx`
+- **状态集成**: `App.tsx` 中 `presentationData` state 和渲染逻辑
+
+### 关键函数 (Presentation.tsx)
+- `nextSlide()` - 下一页，最后一页时触发退出
+- `prevSlide()` - 上一页
+- `renderFrame()` - 帧渲染与动画启动
+- `handleKeyDown` (useEffect 内) - ESC/方向键处理
+- `handleFullscreenChange` (useEffect 内) - 监听退出全屏，触发 onExit
+
+### 核心机制
+- **Frame 排序**: 按 Y 坐标升序 `e1.y - e2.y`
+- **最后一页判断**: `frameIndex === frames.length - 1`
+- **退出流程**: ESC → `exitFullscreen()` → `fullscreenchange` 事件 → `onExit()` → 恢复原始数据到 localStorage
+- **Props**: `onExit` 回调负责恢复 `originalElements/AppState/Files`
