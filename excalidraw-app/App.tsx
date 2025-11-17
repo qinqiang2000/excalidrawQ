@@ -756,19 +756,58 @@ const ExcalidrawWrapper = () => {
     };
   }, [excalidrawAPI]);
 
+  // Monitor fullscreen changes to auto-exit presentation mode when user exits fullscreen
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      // If user exits fullscreen while in presentation mode, exit presentation mode
+      if (!document.fullscreenElement && presentationData?.enabled && excalidrawAPI) {
+        console.log('🖥️ 全屏退出，自动退出演示模式');
+        const currentAppState = excalidrawAPI.getAppState();
+        if (currentAppState.presentationMode?.enabled) {
+          const previousState = currentAppState.presentationMode.previousState;
+          const frames = excalidrawAPI.getSceneElements().filter((e) => e.type === "frame");
+          const sortedFrames = [...frames].sort((e1, e2) => e1.y - e2.y);
+          const currentFrame = sortedFrames[currentAppState.presentationMode.frameIndex];
+
+          excalidrawAPI.updateScene({
+            appState: {
+              presentationMode: {
+                enabled: false,
+                frameIndex: 0,
+                previousState: null,
+              },
+              selectedElementIds: currentFrame
+                ? { [currentFrame.id]: true }
+                : previousState?.selectedElementIds || {},
+              scrollX: previousState?.scrollX ?? currentAppState.scrollX,
+              scrollY: previousState?.scrollY ?? currentAppState.scrollY,
+              zoom: previousState?.zoom ?? currentAppState.zoom,
+              frameRendering: previousState?.frameRendering ?? currentAppState.frameRendering,
+            },
+          });
+        }
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [presentationData?.enabled, excalidrawAPI]);
+
 
   const onChange = (
     elements: readonly OrderedExcalidrawElement[],
     appState: AppState,
     files: BinaryFiles,
   ) => {
-    // Handle presentation mode state
+    // Handle presentation mode state - sliding window mode
     if (appState.presentationMode?.enabled && !presentationData?.enabled) {
-      // Entering presentation mode - save original scene data
-      console.log('🎭 进入演示模式，保存场景:', {
+      // Entering presentation mode - save original scene data and enter fullscreen
+      console.log('🎭 进入滑动窗口演示模式:', {
         name: appState.name,
         elementCount: elements.length,
-        firstElementId: elements[0]?.id?.slice(0, 8),
+        frameIndex: appState.presentationMode.frameIndex,
       });
       setPresentationData({
         enabled: true,
@@ -779,7 +818,14 @@ const ExcalidrawWrapper = () => {
         originalAppState: appState,
         originalFiles: files,
       });
-      return; // Don't save to localStorage when in presentation mode
+
+      // Enter fullscreen mode
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          console.warn("Could not enter fullscreen:", err);
+        });
+      }
+      // Don't return - allow normal rendering to continue
     } else if (appState.presentationMode?.enabled && presentationData?.enabled) {
       // Already in presentation mode, just update frame index if changed
       if (presentationData.frameIndex !== appState.presentationMode.frameIndex) {
@@ -788,11 +834,21 @@ const ExcalidrawWrapper = () => {
           frameIndex: appState.presentationMode.frameIndex,
         });
       }
-      return;
+      // Don't return - allow normal rendering to continue
     } else if (!appState.presentationMode?.enabled && presentationData?.enabled) {
-      // Exiting presentation mode - keep presentationData for restoration
-      // Will be cleared after Excalidraw component re-initializes
-      return;
+      // Exiting presentation mode - restore original data
+      console.log('🚪 退出滑动窗口演示模式');
+
+      // Exit fullscreen if in fullscreen
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch((err) => {
+          console.warn("Could not exit fullscreen:", err);
+        });
+      }
+
+      // Clear presentation data
+      setPresentationData(null);
+      // Don't return - allow normal rendering to continue
     }
 
     // console.log('🔄 onChange 触发:', {
@@ -1081,63 +1137,8 @@ const ExcalidrawWrapper = () => {
     },
   };
 
-  // Render presentation mode if enabled
-  if (presentationData?.enabled) {
-    return (
-      <Presentation
-        elements={presentationData.elements}
-        appState={presentationData.appState}
-        initialFrameIndex={presentationData.frameIndex}
-        onExit={() => {
-          // Save original data to localStorage so new Excalidraw component loads it
-          console.log('🚪 退出演示模式，保存到 localStorage', {
-            name: presentationData.originalAppState.name,
-            elementCount: presentationData.originalElements.length,
-          });
-
-          const restoredAppState = {
-            ...presentationData.originalAppState,
-            presentationMode: {
-              enabled: false,
-              frameIndex: 0,
-              previousState: null,
-            },
-            // Restore frameRendering from previousState if available
-            frameRendering: presentationData.originalAppState.presentationMode?.previousState?.frameRendering ||
-                           presentationData.originalAppState.frameRendering,
-          };
-
-          try {
-            localStorage.setItem(
-              getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS),
-              JSON.stringify(clearElementsForLocalStorage(presentationData.originalElements))
-            );
-            localStorage.setItem(
-              getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_APP_STATE),
-              JSON.stringify(clearAppStateForLocalStorage(restoredAppState))
-            );
-            console.log('✅ 数据已保存到 localStorage');
-          } catch (error) {
-            console.error('❌ 保存到 localStorage 失败:', error);
-          }
-
-          // Reset initialStatePromiseRef to a new promise that resolves with restored data
-          // This ensures the new Excalidraw component gets the correct initial data
-          const newPromise = resolvablePromise<ExcalidrawInitialDataState | null>();
-          newPromise.resolve({
-            elements: presentationData.originalElements,
-            appState: restoredAppState,
-            files: presentationData.originalFiles,
-          });
-          initialStatePromiseRef.current.promise = newPromise;
-          console.log('🔄 重置 initialStatePromiseRef');
-
-          // Clear presentation data to switch back to main Excalidraw
-          setPresentationData(null);
-        }}
-      />
-    );
-  }
+  // Presentation mode now uses sliding window approach - no separate component needed
+  // The main Excalidraw component handles the presentation with fullscreen and hidden UI
 
   return (
     <div
