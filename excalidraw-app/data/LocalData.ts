@@ -298,6 +298,40 @@ export class LocalData {
     }
   };
 
+  /** Save FileHandle for a specific file ID to IndexedDB */
+  static saveFileHandleForFile = async (
+    fileId: string,
+    fileHandle: FileSystemHandle | null,
+  ) => {
+    try {
+      if (fileHandle) {
+        await set(`fileHandle-${fileId}`, fileHandle, fileHandleStore);
+      } else {
+        await del(`fileHandle-${fileId}`, fileHandleStore);
+      }
+    } catch (error) {
+      console.warn(
+        `Failed to save fileHandle for file ${fileId} to IndexedDB:`,
+        error,
+      );
+    }
+  };
+
+  /** Load FileHandle for a specific file ID from IndexedDB */
+  static loadFileHandleForFile = async (
+    fileId: string,
+  ): Promise<FileSystemHandle | null> => {
+    try {
+      return (await get(`fileHandle-${fileId}`, fileHandleStore)) || null;
+    } catch (error) {
+      console.warn(
+        `Failed to load fileHandle for file ${fileId} from IndexedDB:`,
+        error,
+      );
+      return null;
+    }
+  };
+
   // ---------------------------------------------------------------------------
 
   static fileStorage = new LocalFileManager({

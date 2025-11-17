@@ -164,7 +164,7 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
     }
   }, [isOpenedByKeyboard, isOpen, recentFiles.length]);
 
-  const handleFileSelect = (file: RecentFile) => {
+  const handleFileSelect = async (file: RecentFile) => {
     // 检查 excalidrawAPI 是否可用
     const api = (window as any).excalidrawAPI;
     if (!api) {
@@ -178,12 +178,16 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
 
     if (sceneData) {
       try {
+        // 尝试恢复该文件的 fileHandle
+        const fileHandle = await LocalData.loadFileHandleForFile(file.id);
+
         // 使用 excalidrawAPI 加载场景
         api.updateScene({
           elements: sceneData.elements || [],
           appState: {
             ...sceneData.appState,
             name: file.name,
+            fileHandle: fileHandle || null,  // 恢复该文件的 fileHandle，如果没有则为 null
           }
         });
 
@@ -191,6 +195,9 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
         if (sceneData.files && Object.keys(sceneData.files).length > 0) {
           api.addFiles(Object.values(sceneData.files));
         }
+
+        // 关键修复：更新当前文件ID追踪，防止文件内容相互覆盖
+        (window as any).__currentTempFileId = file.id;
 
         setIsOpen(false); // 加载成功后关闭菜单
       } catch (error) {

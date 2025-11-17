@@ -917,12 +917,20 @@ const ExcalidrawWrapper = () => {
           // 使用生成的唯一ID保存场景数据
           if (uniqueId) {
             LocalData.saveTemporaryScene(uniqueId, elements, appState, files);
+            // 保存该文件的 fileHandle，以便切换文件时恢复
+            if (appState.fileHandle) {
+              LocalData.saveFileHandleForFile(uniqueId, appState.fileHandle);
+            }
           }
         } else {
           // 静默更新已存在的场景数据，使用现有的ID
           LocalData.saveTemporaryScene(existingFile.id, elements, appState, files);
           // 更新最后修改时间
           LocalData.updateRecentFileTime(existingFile.id);
+          // 保存该文件的 fileHandle，以便切换文件时恢复
+          if (appState.fileHandle) {
+            LocalData.saveFileHandleForFile(existingFile.id, appState.fileHandle);
+          }
         }
       } else {
         // 没有 fileHandle 的文件（内存中创建的文件）
