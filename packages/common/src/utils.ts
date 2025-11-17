@@ -212,8 +212,27 @@ export const easeOut = (k: number) => {
   return 1 - Math.pow(1 - k, 4);
 };
 
+/**
+ * Cubic ease-in-out method
+ * Starts slow, accelerates in the middle, and slows down at the end
+ *
+ * @param {number} k - The value to be tweened (0 to 1).
+ * @returns {number} The tweened value.
+ */
+export const easeInOutCubic = (k: number) => {
+  return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+};
+
 const easeOutInterpolate = (from: number, to: number, progress: number) => {
   return (to - from) * easeOut(progress) + from;
+};
+
+const easeInOutCubicInterpolate = (
+  from: number,
+  to: number,
+  progress: number,
+) => {
+  return (to - from) * easeInOutCubic(progress) + from;
 };
 
 /**
@@ -251,6 +270,7 @@ export const easeToValuesRAF = <
   onStep,
   duration = 250,
   interpolateValue,
+  easingFunction = easeOut,
   onStart,
   onEnd,
   onCancel,
@@ -270,6 +290,11 @@ export const easeToValuesRAF = <
   ) => number | undefined;
   onStep: (values: T) => void;
   duration?: number;
+  /**
+   * Custom easing function. Defaults to easeOut.
+   * Use easeInOutCubic for smoother presentation transitions.
+   */
+  easingFunction?: (k: number) => number;
   onStart?: () => void;
   onEnd?: () => void;
   onCancel?: () => void;
@@ -288,7 +313,7 @@ export const easeToValuesRAF = <
     }
 
     const elapsed = Math.min(timestamp - startTime, duration);
-    const factor = easeOut(elapsed / duration);
+    const factor = easingFunction(elapsed / duration);
 
     const newValues = {} as T;
 
@@ -315,10 +340,10 @@ export const easeToValuesRAF = <
 
         result = interpolateValue
           ? interpolateValue(startValue, endValue, progress, _key)
-          : easeOutInterpolate(startValue, endValue, progress);
+          : (endValue - startValue) * easingFunction(progress) + startValue;
 
         if (result == null) {
-          result = easeOutInterpolate(startValue, endValue, progress);
+          result = (endValue - startValue) * easingFunction(progress) + startValue;
         }
 
         newValues[_key] = result as T[K];

@@ -90,6 +90,7 @@ import {
   isTestEnv,
   isDevEnv,
   easeOut,
+  easeInOutCubic,
   updateStable,
   addEventListener,
   normalizeEOL,
@@ -1549,7 +1550,7 @@ class App extends React.Component<AppProps, AppState> {
 
     // Filter elements in presentation mode to only show current frame
     let visibleElements = allVisibleElements;
-    if (this.state.presentationMode.enabled) {
+    if (this.state.presentationMode.enabled && !this.state.isAnimatingFrameTransition) {
       const frames = this.scene
         .getNonDeletedElements()
         .filter((e) => e.type === "frame")
@@ -3885,9 +3886,9 @@ class App extends React.Component<AppProps, AppState> {
         },
         toValues: { scrollX, scrollY, zoom: zoom.value },
         interpolateValue: (from, to, progress, key) => {
-          // for zoom, use different easing
+          // for zoom, use exponential easing for smoother transition
           if (key === "zoom") {
-            return from * Math.pow(to / from, easeOut(progress));
+            return from * Math.pow(to / from, easeInOutCubic(progress));
           }
           // handle using default
           return undefined;
@@ -3900,15 +3901,26 @@ class App extends React.Component<AppProps, AppState> {
           });
         },
         onStart: () => {
-          this.setState({ shouldCacheIgnoreZoom: true });
+          this.setState({
+            shouldCacheIgnoreZoom: true,
+            isAnimatingFrameTransition: this.state.presentationMode.enabled,
+          });
         },
         onEnd: () => {
           this.setState({ shouldCacheIgnoreZoom: false });
+          // Delay hiding other frames to allow smooth transition completion
+          setTimeout(() => {
+            this.setState({ isAnimatingFrameTransition: false });
+          }, 50);
         },
         onCancel: () => {
-          this.setState({ shouldCacheIgnoreZoom: false });
+          this.setState({
+            shouldCacheIgnoreZoom: false,
+            isAnimatingFrameTransition: false,
+          });
         },
-        duration: opts?.duration ?? 500,
+        duration: opts?.duration ?? 999,
+        easingFunction: easeInOutCubic,
       });
 
       this.cancelInProgressAnimation = () => {
