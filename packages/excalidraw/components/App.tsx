@@ -1533,7 +1533,7 @@ class App extends React.Component<AppProps, AppState> {
     const { renderTopRightUI, renderCustomStats } = this.props;
 
     const sceneNonce = this.scene.getSceneNonce();
-    const { elementsMap, visibleElements } =
+    const { elementsMap, visibleElements: allVisibleElements } =
       this.renderer.getRenderableElements({
         sceneNonce,
         zoom: this.state.zoom,
@@ -1546,6 +1546,36 @@ class App extends React.Component<AppProps, AppState> {
         editingTextElement: this.state.editingTextElement,
         newElementId: this.state.newElement?.id,
       });
+
+    // Filter elements in presentation mode to only show current frame
+    let visibleElements = allVisibleElements;
+    if (this.state.presentationMode.enabled) {
+      const frames = this.scene
+        .getNonDeletedElements()
+        .filter((e) => e.type === "frame")
+        .sort((e1, e2) => e1.y - e2.y);
+      const currentFrame = frames[this.state.presentationMode.frameIndex];
+      if (currentFrame) {
+        const currentFrameId = currentFrame.id;
+        // Only show elements that belong to the current frame
+        visibleElements = allVisibleElements.filter((el) => {
+          // Hide all other frames
+          if (el.type === "frame" && el.id !== currentFrameId) {
+            return false;
+          }
+          // Hide elements that belong to other frames
+          if (el.frameId && el.frameId !== currentFrameId) {
+            return false;
+          }
+          // Hide elements that don't belong to any frame (loose elements)
+          // but keep the current frame itself
+          if (!el.frameId && el.id !== currentFrameId && el.type !== "frame") {
+            return false;
+          }
+          return true;
+        });
+      }
+    }
     this.visibleElements = visibleElements;
 
     const allElementsMap = this.scene.getNonDeletedElementsMap();
@@ -2802,6 +2832,8 @@ class App extends React.Component<AppProps, AppState> {
         this.scrollToContent([currentFrame], {
           fitToViewport: true,
           animate: true,
+          // Use 0.9 to leave some margin and avoid showing adjacent frames
+          viewportZoomFactor: 0.9,
         });
       }
     }
@@ -2820,6 +2852,8 @@ class App extends React.Component<AppProps, AppState> {
         this.scrollToContent([currentFrame], {
           fitToViewport: true,
           animate: true,
+          // Use 0.9 to leave some margin and avoid showing adjacent frames
+          viewportZoomFactor: 0.9,
         });
       }
     }
