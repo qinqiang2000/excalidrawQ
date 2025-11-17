@@ -4202,6 +4202,30 @@ class App extends React.Component<AppProps, AppState> {
         };
   };
 
+  private exitPresentationMode = () => {
+    const previousState = this.state.presentationMode.previousState;
+    const frames = this.scene
+      .getNonDeletedElements()
+      .filter((e) => e.type === "frame")
+      .sort((e1, e2) => e1.y - e2.y);
+    const currentFrame = frames[this.state.presentationMode.frameIndex];
+
+    this.setState({
+      presentationMode: {
+        enabled: false,
+        frameIndex: 0,
+        previousState: null,
+      },
+      selectedElementIds: currentFrame
+        ? { [currentFrame.id]: true }
+        : previousState?.selectedElementIds || {},
+      scrollX: previousState?.scrollX ?? this.state.scrollX,
+      scrollY: previousState?.scrollY ?? this.state.scrollY,
+      zoom: previousState?.zoom ?? this.state.zoom,
+      frameRendering: previousState?.frameRendering ?? this.state.frameRendering,
+    });
+  };
+
   // Input handling
   private onKeyDown = withBatchedUpdates(
     (event: React.KeyboardEvent | KeyboardEvent) => {
@@ -4280,27 +4304,7 @@ class App extends React.Component<AppProps, AppState> {
         if (this.state.presentationMode.enabled) {
           // ESC key exits presentation mode
           if (event.key === KEYS.ESCAPE) {
-            const previousState = this.state.presentationMode.previousState;
-            const frames = this.scene
-              .getNonDeletedElements()
-              .filter((e) => e.type === "frame")
-              .sort((e1, e2) => e1.y - e2.y);
-            const currentFrame = frames[this.state.presentationMode.frameIndex];
-
-            this.setState({
-              presentationMode: {
-                enabled: false,
-                frameIndex: 0,
-                previousState: null,
-              },
-              selectedElementIds: currentFrame
-                ? { [currentFrame.id]: true }
-                : previousState?.selectedElementIds || {},
-              scrollX: previousState?.scrollX ?? this.state.scrollX,
-              scrollY: previousState?.scrollY ?? this.state.scrollY,
-              zoom: previousState?.zoom ?? this.state.zoom,
-              frameRendering: previousState?.frameRendering ?? this.state.frameRendering,
-            });
+            this.exitPresentationMode();
             return;
           }
 
@@ -4314,18 +4318,21 @@ class App extends React.Component<AppProps, AppState> {
               .getNonDeletedElements()
               .filter((e) => e.type === "frame")
               .sort((e1, e2) => e1.y - e2.y);
-            const newIndex = Math.min(
-              this.state.presentationMode.frameIndex + 1,
-              frames.length - 1,
-            );
-            if (newIndex !== this.state.presentationMode.frameIndex) {
-              this.setState({
-                presentationMode: {
-                  ...this.state.presentationMode,
-                  frameIndex: newIndex,
-                },
-              });
+
+            // Check if on last frame, exit presentation mode
+            if (this.state.presentationMode.frameIndex === frames.length - 1) {
+              this.exitPresentationMode();
+              return;
             }
+
+            // Not on last frame, navigate to next frame
+            const newIndex = this.state.presentationMode.frameIndex + 1;
+            this.setState({
+              presentationMode: {
+                ...this.state.presentationMode,
+                frameIndex: newIndex,
+              },
+            });
             return;
           }
 
