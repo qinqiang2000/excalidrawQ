@@ -969,7 +969,7 @@ export const getFrameOrderIndex = (
 
 /**
  * Get the frame title with presentation order number prefix.
- * Returns format: "#1 Frame Name" or "#2 My Slide"
+ * Returns format: "#1" for default frames, or "#2 Custom Title" for custom named frames
  */
 export const getFrameLikeTitleWithNumber = (
   element: ExcalidrawFrameLikeElement,
@@ -982,5 +982,7 @@ export const getFrameLikeTitleWithNumber = (
     return title;
   }
 
-  return `#${orderIndex} ${title}`;
+  const defaultName = getDefaultFrameName(element);
+  // 如果是默认名称,只显示序号;否则显示序号+自定义标题
+  return title === defaultName ? `#${orderIndex}` : `#${orderIndex} ${title}`;
 };
