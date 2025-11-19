@@ -1420,7 +1420,8 @@ class App extends React.Component<AppProps, AppState> {
       );
 
       if (f.id === this.state.editingFrame) {
-        const frameNameInEdit = frameName;
+        // Use raw title without order prefix for editing
+        const frameNameInEdit = getFrameLikeTitle(f);
 
         frameNameJSX = (
           <input
