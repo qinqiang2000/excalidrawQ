@@ -3920,7 +3920,7 @@ class App extends React.Component<AppProps, AppState> {
             isAnimatingFrameTransition: false,
           });
         },
-        duration: opts?.duration ?? 999,
+        duration: opts?.duration ?? 1111,
         easingFunction: easeInOutCubic,
       });
 

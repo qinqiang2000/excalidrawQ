@@ -8,7 +8,7 @@ import {
 } from "@excalidraw/element";
 import { getFrameChildren } from "@excalidraw/element";
 
-import { KEYS, updateActiveTool } from "@excalidraw/common";
+import { CODES, KEYS, updateActiveTool } from "@excalidraw/common";
 
 import { getElementsInGroup } from "@excalidraw/element";
 
@@ -107,7 +107,7 @@ export const actionRemoveAllElementsFromFrame = register({
 
 export const actionupdateFrameRendering = register({
   name: "updateFrameRendering",
-  label: "labels.updateFrameRendering",
+  label: "labels.toggleFrameRendering",
   viewMode: true,
   trackEvent: { category: "canvas" },
   perform: (elements, appState) => {
@@ -124,6 +124,8 @@ export const actionupdateFrameRendering = register({
     };
   },
   checked: (appState: AppState) => appState.frameRendering.enabled,
+  keyTest: (event) =>
+    !event[KEYS.CTRL_OR_CMD] && event.altKey && event.code === CODES.F,
 });
 
 export const actionSetFrameAsActiveTool = register({

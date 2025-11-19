@@ -50,6 +50,7 @@ export type ShortcutName =
       | "saveToActiveFile"
       | "toggleShortcuts"
       | "wrapSelectionInFrame"
+      | "updateFrameRendering"
       | "present"
     >
   | "saveScene"
@@ -97,6 +98,7 @@ const shortcutMap: Record<ShortcutName, string[]> = {
   gridMode: [getShortcutKey("CtrlOrCmd+'")],
   zenMode: [getShortcutKey("Alt+Z")],
   objectsSnapMode: [getShortcutKey("Alt+S")],
+  updateFrameRendering: [getShortcutKey("Alt+F")],
   stats: [getShortcutKey("Alt+/")],
   addToLibrary: [],
   flipHorizontal: [getShortcutKey("Shift+H")],
