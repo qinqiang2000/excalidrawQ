@@ -149,16 +149,31 @@ local_build() {
 
 # 快速上传代码文件 (排除字体)
 upload_code_only() {
-    echo "🚀 增量同步代码到服务器 (排除字体)..."
+    echo "🚀 打包并上传代码到服务器..."
 
     # 显示本地构建文件大小
     echo "本地构建文件: $(du -sh excalidraw-app/build | cut -f1)"
 
-    # 直接 rsync 增量同步到服务器，只传输变化的文件
-    rsync -avz --progress --delete \
-        --exclude='fonts/' \
+    # 1. 本地打包（排除字体）
+    echo "📦 打包构建文件..."
+    tar -czf /tmp/excalidraw-build.tar.gz --exclude='fonts' -C excalidraw-app/build .
+
+    # 显示压缩包大小
+    echo "压缩包大小: $(du -sh /tmp/excalidraw-build.tar.gz | cut -f1)"
+
+    # 2. rsync 传输压缩包（支持断点续传）
+    echo "📤 上传压缩包（支持断点续传）..."
+    rsync -avz --partial --progress \
         -e "ssh -i ~/tools/pem/ty_sg01.pem" \
-        excalidraw-app/build/ root@129.226.88.226:/var/www/excalidraw/
+        /tmp/excalidraw-build.tar.gz root@129.226.88.226:/tmp/
+
+    # 3. 远程解压
+    echo "📂 远程解压文件..."
+    ssh -i ~/tools/pem/ty_sg01.pem root@129.226.88.226 \
+        'rm -rf /var/www/excalidraw/* && tar -xzf /tmp/excalidraw-build.tar.gz -C /var/www/excalidraw && rm /tmp/excalidraw-build.tar.gz'
+
+    # 4. 清理本地临时文件
+    rm /tmp/excalidraw-build.tar.gz
 
     echo "✅ 代码文件同步完成！"
 }
