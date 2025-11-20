@@ -1550,8 +1550,9 @@ class App extends React.Component<AppProps, AppState> {
       });
 
     // Filter elements in presentation mode to only show current frame
+    // Only filter when frameRendering is disabled (Alt+F to hide frames)
     let visibleElements = allVisibleElements;
-    if (this.state.presentationMode.enabled && !this.state.isAnimatingFrameTransition) {
+    if (this.state.presentationMode.enabled && !this.state.isAnimatingFrameTransition && !this.state.frameRendering.enabled) {
       const frames = this.scene
         .getNonDeletedElements()
         .filter((e) => e.type === "frame")
