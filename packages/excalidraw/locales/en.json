@@ -195,6 +195,11 @@
     "frames": "Frames",
     "texts": "Texts"
   },
+  "frameOrderPanel": {
+    "title": "Presentation Order",
+    "hint": "Drag frames to reorder slides",
+    "noFrames": "No frames on canvas. Add frames to create presentation slides."
+  },
   "buttons": {
     "clearReset": "Reset the canvas",
     "exportJSON": "Export to file",

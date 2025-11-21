@@ -2,6 +2,9 @@ import { CaptureUpdateAction } from "@excalidraw/excalidraw";
 import { register } from "@excalidraw/excalidraw/actions/register";
 import { presentIcon } from "@excalidraw/excalidraw/components/icons";
 import { KEYS } from "@excalidraw/common/keys";
+import { sortFramesByPresentationOrder } from "@excalidraw/element/frame";
+
+import type { ExcalidrawFrameLikeElement } from "@excalidraw/element/types";
 
 export const actionPresent = register({
   name: "present",
@@ -11,22 +14,30 @@ export const actionPresent = register({
   keyTest: (event) =>
     event[KEYS.CTRL_OR_CMD] && event.shiftKey && event.code === "F5",
   perform: (_, appState, __, app) => {
-    const frames = app.scene
+    const allFrames = app.scene
       .getNonDeletedElements()
-      .filter((e) => e.type === "frame");
+      .filter((e) => e.type === "frame") as ExcalidrawFrameLikeElement[];
 
-    if (frames.length === 0) {
+    if (allFrames.length === 0) {
       return { captureUpdate: CaptureUpdateAction.NEVER };
     }
+
+    // Sort frames using presentation order
+    const sortedFrames = sortFramesByPresentationOrder(allFrames);
 
     const selectedElementIds = appState.selectedElementIds;
     const selectedFrames = app.scene
       .getSelectedElements({ selectedElementIds })
-      .filter((e) => e.type === "frame");
+      .filter((e) => e.type === "frame") as ExcalidrawFrameLikeElement[];
+
     let frameIndex = 0;
     if (selectedFrames.length !== 0) {
-      const minY = Math.min(...selectedFrames.map((f) => f.y));
-      frameIndex = frames.reduce((count, f) => count + (f.y < minY ? 1 : 0), 0);
+      // Find the index of the first selected frame in the sorted array
+      const firstSelectedId = selectedFrames[0].id;
+      frameIndex = sortedFrames.findIndex((f) => f.id === firstSelectedId);
+      if (frameIndex === -1) {
+        frameIndex = 0;
+      }
     }
 
     // Enter presentation mode in current window with fullscreen

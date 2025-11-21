@@ -93,17 +93,17 @@ export class SessionManager {
     // Check if this window was opened via launchQueue (file associations)
     const referrer = document.referrer;
     const windowName = window.name;
-    
+
     // If opened from OS file association, drag-and-drop, or as a new window, create new session
     if (!referrer || windowName.includes("_blank") || window.opener) {
       return true;
     }
-    
+
     // Check if there's a pending file operation
     if (sessionStorage.getItem("pendingFileHandle")) {
       return true;
     }
-    
+
     return false;
   }
 

@@ -147,6 +147,11 @@
     "hint_emptyLibrary": "选中画布上的项目添加到此处，或从下方的公共素材库中导入。",
     "hint_emptyPrivateLibrary": "选中画布上的项目添加到此处。"
   },
+  "frameOrderPanel": {
+    "title": "演示顺序",
+    "hint": "拖拽画框以调整幻灯片顺序",
+    "noFrames": "画布上没有画框。添加画框来创建演示幻灯片。"
+  },
   "buttons": {
     "clearReset": "重置画布",
     "exportJSON": "导出为文件",

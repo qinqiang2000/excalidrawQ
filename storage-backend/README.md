@@ -5,7 +5,7 @@
 ## 功能
 
 - **分享保存**: `POST /api/v2/post/` - 保存画板数据并返回分享链接
-- **分享加载**: `GET /api/v2/:id` - 根据ID获取画板数据
+- **分享加载**: `GET /api/v2/:id` - 根据 ID 获取画板数据
 - **健康检查**: `GET /api/v2/` - 服务状态检查
 - **统计信息**: `GET /api/v2/stats` - 存储统计（调试用）
 
@@ -30,9 +30,11 @@ npm run dev
 ## API 接口
 
 ### POST /api/v2/post/
+
 保存画板数据
 
 **请求体**:
+
 ```json
 {
   "elements": [...],
@@ -42,6 +44,7 @@ npm run dev
 ```
 
 **响应**:
+
 ```json
 {
   "id": "uuid",
@@ -50,9 +53,11 @@ npm run dev
 ```
 
 ### GET /api/v2/:id
+
 获取画板数据
 
 **响应**:
+
 ```json
 {
   "elements": [...],
@@ -64,6 +69,7 @@ npm run dev
 ## 存储
 
 目前使用内存存储，重启后数据会丢失。生产环境建议使用：
+
 - Redis
 - 数据库 (PostgreSQL, MySQL)
 - 文件系统

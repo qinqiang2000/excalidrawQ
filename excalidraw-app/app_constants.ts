@@ -86,9 +86,7 @@ export const getWindowId = (): string => {
  * Generate a unique session ID for new windows
  */
 export const generateUniqueSessionId = (): string => {
-  return `session_${Date.now()}_${Math.random()
-    .toString(36)
-    .substring(2, 11)}`;
+  return `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 };
 
 /**
@@ -100,18 +98,18 @@ export const shouldCreateNewSession = (): boolean => {
   // This is indicated by the presence of certain referrer patterns or window.name
   const referrer = document.referrer;
   const windowName = window.name;
-  
+
   // If opened from OS file association or drag-and-drop, create new session
   if (!referrer || windowName.includes("_blank") || window.opener) {
     return true;
   }
-  
+
   // Check if there's a pending file operation in sessionStorage
   // This indicates the window was opened specifically to handle a file
   if (sessionStorage.getItem("pendingFileHandle")) {
     return true;
   }
-  
+
   return false;
 };
 
@@ -141,12 +139,14 @@ export const getSessionStorageKey = (
     // Check if this is a new window that should have its own session
     // This happens when opening files via launchQueue or file associations
     const isNewWindow = shouldCreateNewSession();
-    
+
     if (isNewWindow) {
       sessionId = generateUniqueSessionId();
       // Update the URL to include the new session ID
       urlParams.set("session", sessionId);
-      const newUrl = `${window.location.pathname}?${urlParams.toString()}${window.location.hash}`;
+      const newUrl = `${window.location.pathname}?${urlParams.toString()}${
+        window.location.hash
+      }`;
       window.history.replaceState({}, "", newUrl);
     } else {
       sessionId = "default";

@@ -163,11 +163,15 @@ export type InitializedExcalidrawImageElement = MarkNonNullable<
 export type ExcalidrawFrameElement = _ExcalidrawElementBase & {
   type: "frame";
   name: string | null;
+  /** Custom presentation order for slides. If not set, falls back to Y-coordinate sorting */
+  presentationOrder?: number | null;
 };
 
 export type ExcalidrawMagicFrameElement = _ExcalidrawElementBase & {
   type: "magicframe";
   name: string | null;
+  /** Custom presentation order for slides. If not set, falls back to Y-coordinate sorting */
+  presentationOrder?: number | null;
 };
 
 export type ExcalidrawFrameLikeElement =

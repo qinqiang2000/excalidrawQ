@@ -6,6 +6,7 @@ import {
 } from "excalidraw-app/presentation/animation";
 import { KEYS, supportsResizeObserver } from "@excalidraw/common";
 import { isInitializedImageElement } from "@excalidraw/element/typeChecks";
+import { sortFramesByPresentationOrder } from "@excalidraw/element/frame";
 
 import type {
   AppState,
@@ -15,6 +16,7 @@ import type {
 import type {
   ExcalidrawElement,
   ExcalidrawFrameElement,
+  ExcalidrawFrameLikeElement,
   FileId,
   NonDeletedExcalidrawElement,
 } from "@excalidraw/element/types";
@@ -25,7 +27,7 @@ import { updateStaleImageStatuses } from "../data/FileManager";
 import "./Presentation.scss";
 
 const getPositionedElementsForFrame = (
-  frame: ExcalidrawFrameElement,
+  frame: ExcalidrawFrameLikeElement,
   allElements: readonly ExcalidrawElement[],
 ) =>
   allElements
@@ -65,7 +67,7 @@ const buildElementMap = (
 export function PresentationScene(props: {
   elements: readonly ExcalidrawElement[];
   appState: Readonly<AppState>;
-  frames: readonly ExcalidrawFrameElement[];
+  frames: readonly ExcalidrawFrameLikeElement[];
   initialFrameIndex?: number;
   onExit?: () => void;
 }) {
@@ -332,8 +334,7 @@ export function Presentation(props: {
     const res = elements.filter(
       (e): e is ExcalidrawFrameElement => e.type === "frame",
     );
-    res.sort((e1, e2) => e1.y - e2.y);
-    return res;
+    return sortFramesByPresentationOrder(res);
   }, [elements]);
 
   if (frames.length === 0) {
@@ -346,7 +347,9 @@ export function Presentation(props: {
   }
 
   const safeFrameIndex =
-    initialFrameIndex < 0 || initialFrameIndex >= frames.length ? 0 : initialFrameIndex;
+    initialFrameIndex < 0 || initialFrameIndex >= frames.length
+      ? 0
+      : initialFrameIndex;
 
   return (
     <PresentationScene

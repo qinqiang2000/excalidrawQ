@@ -12,7 +12,11 @@
     "cors": "^2.8.5",
     "uuid": "^9.0.0"
   },
-  "keywords": ["excalidraw", "storage", "backend"],
+  "keywords": [
+    "excalidraw",
+    "storage",
+    "backend"
+  ],
   "author": "Custom Implementation",
   "license": "MIT"
 }

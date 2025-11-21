@@ -343,7 +343,8 @@ export const easeToValuesRAF = <
           : (endValue - startValue) * easingFunction(progress) + startValue;
 
         if (result == null) {
-          result = (endValue - startValue) * easingFunction(progress) + startValue;
+          result =
+            (endValue - startValue) * easingFunction(progress) + startValue;
         }
 
         newValues[_key] = result as T[K];

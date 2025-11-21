@@ -413,7 +413,7 @@ export class LocalData {
    * 获取下一个可用的文件序号
    */
   private static getNextFileNumber = (): number => {
-    const COUNTER_KEY = 'excalidraw-file-counter';
+    const COUNTER_KEY = "excalidraw-file-counter";
     const stored = localStorage.getItem(COUNTER_KEY);
     const current = stored ? parseInt(stored, 10) : 1;
     localStorage.setItem(COUNTER_KEY, String(current + 1));
@@ -425,7 +425,7 @@ export class LocalData {
    */
   private static generateSequentialFileName = (): string => {
     const number = this.getNextFileNumber();
-    return `画板-${String(number).padStart(3, '0')}`;
+    return `画板-${String(number).padStart(3, "0")}`;
   };
 
   /**
@@ -434,10 +434,10 @@ export class LocalData {
   private static formatTimestamp = (timestamp: number): string => {
     const date = new Date(timestamp);
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hour = String(date.getHours()).padStart(2, '0');
-    const minute = String(date.getMinutes()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hour = String(date.getHours()).padStart(2, "0");
+    const minute = String(date.getMinutes()).padStart(2, "0");
 
     return `${year}${month}${day}_${hour}${minute}`;
   };
@@ -445,19 +445,23 @@ export class LocalData {
   /**
    * 基于白板内容生成简单描述
    */
-  private static generateContentDescription = (elements: readonly ExcalidrawElement[]): string => {
+  private static generateContentDescription = (
+    elements: readonly ExcalidrawElement[],
+  ): string => {
     // 过滤掉删除的元素
-    const activeElements = elements.filter(el => !el.isDeleted);
+    const activeElements = elements.filter((el) => !el.isDeleted);
 
     if (activeElements.length === 0) {
-      return '空白画板';
+      return "空白画板";
     }
 
     // 查找文本元素
-    const textElements = activeElements.filter(el => el.type === 'text' && 'text' in el && el.text.trim());
+    const textElements = activeElements.filter(
+      (el) => el.type === "text" && "text" in el && el.text.trim(),
+    );
 
     if (textElements.length > 0) {
-      return '包含文字';
+      return "包含文字";
     }
 
     // 统计图形类型
@@ -468,18 +472,19 @@ export class LocalData {
 
     // 基于主要图形类型生成描述
     const typeNames = {
-      rectangle: '矩形',
-      ellipse: '椭圆',
-      diamond: '菱形',
-      line: '线条',
-      arrow: '箭头',
-      freedraw: '手绘',
-      image: '图片',
-      frame: '框架'
+      rectangle: "矩形",
+      ellipse: "椭圆",
+      diamond: "菱形",
+      line: "线条",
+      arrow: "箭头",
+      freedraw: "手绘",
+      image: "图片",
+      frame: "框架",
     };
 
-    const mainType = Object.entries(elementTypes)
-      .sort(([,a], [,b]) => b - a)[0];
+    const mainType = Object.entries(elementTypes).sort(
+      ([, a], [, b]) => b - a,
+    )[0];
 
     if (mainType) {
       const [type, count] = mainType;
@@ -495,7 +500,7 @@ export class LocalData {
    */
   private static generateDescriptionWithTime = (
     elements: readonly ExcalidrawElement[],
-    timestamp: number
+    timestamp: number,
   ): string => {
     const contentDesc = this.generateContentDescription(elements);
     const timeStr = this.formatTimestamp(timestamp);
@@ -526,12 +531,12 @@ export class LocalData {
       // 生成唯一ID (如果没有提供)
       const finalFileInfo = {
         ...fileInfo,
-        id: fileInfo.id || this.generateUniqueId()
+        id: fileInfo.id || this.generateUniqueId(),
       };
 
       // 检查是否已存在相同ID或名称的文件
-      const existingIndex = recentFiles.findIndex((f: any) =>
-        f.id === finalFileInfo.id || f.name === finalFileInfo.name
+      const existingIndex = recentFiles.findIndex(
+        (f: any) => f.id === finalFileInfo.id || f.name === finalFileInfo.name,
       );
 
       let updated: any[];
@@ -540,20 +545,19 @@ export class LocalData {
         const existingFile = recentFiles[existingIndex];
         recentFiles[existingIndex] = {
           ...existingFile,
-          lastModified: finalFileInfo.lastModified
+          lastModified: finalFileInfo.lastModified,
         };
 
         // 将更新的文件移到最前面
         updated = [
           recentFiles[existingIndex],
-          ...recentFiles.filter((_: any, index: number) => index !== existingIndex)
+          ...recentFiles.filter(
+            (_: any, index: number) => index !== existingIndex,
+          ),
         ];
       } else {
         // 新文件，添加到最前面并限制数量（最多10个）
-        updated = [
-          finalFileInfo,
-          ...recentFiles
-        ].slice(0, 10);
+        updated = [finalFileInfo, ...recentFiles].slice(0, 10);
       }
 
       localStorage.setItem(this.RECENT_FILES_KEY, JSON.stringify(updated));
@@ -592,7 +596,7 @@ export class LocalData {
     const recentFiles = this.getRecentFiles();
 
     // 清除对应的场景数据
-    recentFiles.forEach(file => {
+    recentFiles.forEach((file) => {
       if (file.isTemporary) {
         localStorage.removeItem(`excalidraw-temp-scene-${file.id}`);
       }
@@ -624,7 +628,8 @@ export class LocalData {
         // 根据文件类型更新描述
         if (!file.isTemporary) {
           // 常规文件：只显示时间戳
-          recentFiles[fileIndex].description = this.generateTimestampOnlyDescription(timestamp);
+          recentFiles[fileIndex].description =
+            this.generateTimestampOnlyDescription(timestamp);
         }
         // 临时文件保持现有描述不变，因为它们通过 updateExistingTemporaryScene 更新
 
@@ -632,16 +637,18 @@ export class LocalData {
         const updatedFile = recentFiles[fileIndex];
         const updatedList = [
           updatedFile,
-          ...recentFiles.filter((_: any, index: number) => index !== fileIndex)
+          ...recentFiles.filter((_: any, index: number) => index !== fileIndex),
         ];
 
-        localStorage.setItem(this.RECENT_FILES_KEY, JSON.stringify(updatedList));
+        localStorage.setItem(
+          this.RECENT_FILES_KEY,
+          JSON.stringify(updatedList),
+        );
       }
     } catch (error) {
       console.error("❌ Failed to update recent file time:", error);
     }
   };
-
 
   /**
    * 更新已存在文件的内容和描述
@@ -653,7 +660,10 @@ export class LocalData {
     files: BinaryFiles,
   ): void => {
     const timestamp = Date.now();
-    const descriptionWithTime = this.generateDescriptionWithTime(elements, timestamp);
+    const descriptionWithTime = this.generateDescriptionWithTime(
+      elements,
+      timestamp,
+    );
 
     // 更新场景数据
     this.saveTemporaryScene(fileId, elements, appState, files);
@@ -667,7 +677,10 @@ export class LocalData {
       if (fileIndex >= 0) {
         recentFiles[fileIndex].description = descriptionWithTime;
         recentFiles[fileIndex].lastModified = timestamp;
-        localStorage.setItem(this.RECENT_FILES_KEY, JSON.stringify(recentFiles));
+        localStorage.setItem(
+          this.RECENT_FILES_KEY,
+          JSON.stringify(recentFiles),
+        );
       }
     } catch (error) {
       // Silent error to avoid console spam
@@ -686,7 +699,10 @@ export class LocalData {
 
     // 生成序号文件名和带时间戳的描述
     const sequentialName = this.generateSequentialFileName();
-    const descriptionWithTime = this.generateDescriptionWithTime(elements, timestamp);
+    const descriptionWithTime = this.generateDescriptionWithTime(
+      elements,
+      timestamp,
+    );
     const uniqueId = this.generateUniqueId();
 
     // 保存场景数据
@@ -698,7 +714,7 @@ export class LocalData {
       name: sequentialName,
       description: descriptionWithTime,
       lastModified: timestamp,
-      isTemporary: true
+      isTemporary: true,
     });
 
     return { id: uniqueId, name: sequentialName };
@@ -726,10 +742,13 @@ export class LocalData {
               dataURL: fileData.dataURL,
               created: fileData.created,
             },
-          ])
+          ]),
         ),
       };
-      localStorage.setItem(`excalidraw-temp-scene-${id}`, JSON.stringify(sceneData));
+      localStorage.setItem(
+        `excalidraw-temp-scene-${id}`,
+        JSON.stringify(sceneData),
+      );
     } catch (error) {
       console.error("❌ Failed to save temporary scene:", error);
     }
@@ -738,7 +757,9 @@ export class LocalData {
   /**
    * 加载临时场景数据 (用于最近文件)
    */
-  static loadTemporaryScene = (id: string): {
+  static loadTemporaryScene = (
+    id: string,
+  ): {
     elements: readonly ExcalidrawElement[];
     appState: Partial<AppState>;
     files: BinaryFiles;

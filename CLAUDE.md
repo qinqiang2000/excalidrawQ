@@ -35,6 +35,7 @@ yarn fix             # Auto-fix formatting and linting issues
 ```
 
 **端口配置说明**:
+
 - **本地开发**: 使用 3030 端口（`.env.development` 中配置为 3030）
 - **生产部署**: 使用 3000 端口（`deploy-prod.sh` 中指定）
 - 如果 `yarn start` 仍然启动在 3000，请使用 `cd excalidraw-app && yarn vite --port 3030`

@@ -92,35 +92,35 @@ const InteractiveCanvas = (props: InteractiveCanvasProps) => {
 
     if (props.appState.collaborators instanceof Map) {
       props.appState.collaborators.forEach((user, socketId) => {
-      if (user.selectedElementIds) {
-        for (const id of Object.keys(user.selectedElementIds)) {
-          if (!remoteSelectedElementIds.has(id)) {
-            remoteSelectedElementIds.set(id, []);
+        if (user.selectedElementIds) {
+          for (const id of Object.keys(user.selectedElementIds)) {
+            if (!remoteSelectedElementIds.has(id)) {
+              remoteSelectedElementIds.set(id, []);
+            }
+            remoteSelectedElementIds.get(id)!.push(socketId);
           }
-          remoteSelectedElementIds.get(id)!.push(socketId);
         }
-      }
-      if (!user.pointer || user.pointer.renderCursor === false) {
-        return;
-      }
-      if (user.username) {
-        remotePointerUsernames.set(socketId, user.username);
-      }
-      if (user.userState) {
-        remotePointerUserStates.set(socketId, user.userState);
-      }
-      remotePointerViewportCoords.set(
-        socketId,
-        sceneCoordsToViewportCoords(
-          {
-            sceneX: user.pointer.x,
-            sceneY: user.pointer.y,
-          },
-          props.appState,
-        ),
-      );
-      remotePointerButton.set(socketId, user.button);
-    });
+        if (!user.pointer || user.pointer.renderCursor === false) {
+          return;
+        }
+        if (user.username) {
+          remotePointerUsernames.set(socketId, user.username);
+        }
+        if (user.userState) {
+          remotePointerUserStates.set(socketId, user.userState);
+        }
+        remotePointerViewportCoords.set(
+          socketId,
+          sceneCoordsToViewportCoords(
+            {
+              sceneX: user.pointer.x,
+              sceneY: user.pointer.y,
+            },
+            props.appState,
+          ),
+        );
+        remotePointerButton.set(socketId, user.button);
+      });
     }
 
     const selectionColor =

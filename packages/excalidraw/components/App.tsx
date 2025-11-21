@@ -188,6 +188,7 @@ import {
   getFrameLikeTitleWithNumber,
   getElementsOverlappingFrame,
   filterElementsEligibleAsFrameChildren,
+  sortFramesByPresentationOrder,
   hitElementBoundText,
   hitElementBoundingBoxOnly,
   hitElementItself,
@@ -1552,11 +1553,16 @@ class App extends React.Component<AppProps, AppState> {
     // Filter elements in presentation mode to only show current frame
     // Only filter when frameRendering is disabled (Alt+F to hide frames)
     let visibleElements = allVisibleElements;
-    if (this.state.presentationMode.enabled && !this.state.isAnimatingFrameTransition && !this.state.frameRendering.enabled) {
-      const frames = this.scene
-        .getNonDeletedElements()
-        .filter((e) => e.type === "frame")
-        .sort((e1, e2) => e1.y - e2.y);
+    if (
+      this.state.presentationMode.enabled &&
+      !this.state.isAnimatingFrameTransition &&
+      !this.state.frameRendering.enabled
+    ) {
+      const frames = sortFramesByPresentationOrder(
+        this.scene
+          .getNonDeletedElements()
+          .filter((e) => e.type === "frame") as ExcalidrawFrameLikeElement[],
+      );
       const currentFrame = frames[this.state.presentationMode.frameIndex];
       if (currentFrame) {
         const currentFrameId = currentFrame.id;
@@ -1638,40 +1644,41 @@ class App extends React.Component<AppProps, AppState> {
                       <ExcalidrawActionManagerContext.Provider
                         value={this.actionManager}
                       >
-                        {!this.presentationModeEnabled && !this.state.presentationMode.enabled && (
-                          <LayerUI
-                            canvas={this.canvas}
-                            appState={this.state}
-                            files={this.files}
-                            setAppState={this.setAppState}
-                            actionManager={this.actionManager}
-                            elements={this.scene.getNonDeletedElements()}
-                            onLockToggle={this.toggleLock}
-                            onPenModeToggle={this.togglePenMode}
-                            onHandToolToggle={this.onHandToolToggle}
-                            langCode={getLanguage().code}
-                            renderTopRightUI={renderTopRightUI}
-                            renderCustomStats={renderCustomStats}
-                            showExitZenModeBtn={false}
-                            UIOptions={this.props.UIOptions}
-                            onExportImage={this.onExportImage}
-                            renderWelcomeScreen={
-                              !this.state.isLoading &&
-                              this.state.showWelcomeScreen &&
-                              this.state.activeTool.type ===
-                                this.defaultSelectionTool &&
-                              !this.state.zenModeEnabled &&
-                              !this.scene.getElementsIncludingDeleted().length
-                            }
-                            app={this}
-                            isCollaborating={this.props.isCollaborating}
-                            generateLinkForSelection={
-                              this.props.generateLinkForSelection
-                            }
-                          >
-                            {this.props.children}
-                          </LayerUI>
-                        )}
+                        {!this.presentationModeEnabled &&
+                          !this.state.presentationMode.enabled && (
+                            <LayerUI
+                              canvas={this.canvas}
+                              appState={this.state}
+                              files={this.files}
+                              setAppState={this.setAppState}
+                              actionManager={this.actionManager}
+                              elements={this.scene.getNonDeletedElements()}
+                              onLockToggle={this.toggleLock}
+                              onPenModeToggle={this.togglePenMode}
+                              onHandToolToggle={this.onHandToolToggle}
+                              langCode={getLanguage().code}
+                              renderTopRightUI={renderTopRightUI}
+                              renderCustomStats={renderCustomStats}
+                              showExitZenModeBtn={false}
+                              UIOptions={this.props.UIOptions}
+                              onExportImage={this.onExportImage}
+                              renderWelcomeScreen={
+                                !this.state.isLoading &&
+                                this.state.showWelcomeScreen &&
+                                this.state.activeTool.type ===
+                                  this.defaultSelectionTool &&
+                                !this.state.zenModeEnabled &&
+                                !this.scene.getElementsIncludingDeleted().length
+                              }
+                              app={this}
+                              isCollaborating={this.props.isCollaborating}
+                              generateLinkForSelection={
+                                this.props.generateLinkForSelection
+                              }
+                            >
+                              {this.props.children}
+                            </LayerUI>
+                          )}
 
                         <div className="excalidraw-textEditorContainer" />
                         <div className="excalidraw-contextMenuContainer" />
@@ -2824,12 +2831,14 @@ class App extends React.Component<AppProps, AppState> {
     // Handle presentation mode frame changes
     if (
       this.state.presentationMode.enabled &&
-      prevState.presentationMode.frameIndex !== this.state.presentationMode.frameIndex
+      prevState.presentationMode.frameIndex !==
+        this.state.presentationMode.frameIndex
     ) {
-      const frames = this.scene
-        .getNonDeletedElements()
-        .filter((e) => e.type === "frame")
-        .sort((e1, e2) => e1.y - e2.y);
+      const frames = sortFramesByPresentationOrder(
+        this.scene
+          .getNonDeletedElements()
+          .filter((e) => e.type === "frame") as ExcalidrawFrameLikeElement[],
+      );
       const currentFrame = frames[this.state.presentationMode.frameIndex];
       if (currentFrame) {
         this.scrollToContent([currentFrame], {
@@ -2846,10 +2855,11 @@ class App extends React.Component<AppProps, AppState> {
       this.state.presentationMode.enabled &&
       !prevState.presentationMode.enabled
     ) {
-      const frames = this.scene
-        .getNonDeletedElements()
-        .filter((e) => e.type === "frame")
-        .sort((e1, e2) => e1.y - e2.y);
+      const frames = sortFramesByPresentationOrder(
+        this.scene
+          .getNonDeletedElements()
+          .filter((e) => e.type === "frame") as ExcalidrawFrameLikeElement[],
+      );
       const currentFrame = frames[this.state.presentationMode.frameIndex];
       if (currentFrame) {
         this.scrollToContent([currentFrame], {
@@ -4224,7 +4234,8 @@ class App extends React.Component<AppProps, AppState> {
       scrollX: previousState?.scrollX ?? this.state.scrollX,
       scrollY: previousState?.scrollY ?? this.state.scrollY,
       zoom: previousState?.zoom ?? this.state.zoom,
-      frameRendering: previousState?.frameRendering ?? this.state.frameRendering,
+      frameRendering:
+        previousState?.frameRendering ?? this.state.frameRendering,
     });
   };
 
@@ -4277,7 +4288,10 @@ class App extends React.Component<AppProps, AppState> {
           let frameIndex = 0;
           if (selectedFrames.length !== 0) {
             const minY = Math.min(...selectedFrames.map((f) => f.y));
-            frameIndex = frames.reduce((count, f) => count + (f.y < minY ? 1 : 0), 0);
+            frameIndex = frames.reduce(
+              (count, f) => count + (f.y < minY ? 1 : 0),
+              0,
+            );
           }
 
           // Enter presentation mode in current window
@@ -4311,10 +4325,7 @@ class App extends React.Component<AppProps, AppState> {
           }
 
           // Arrow keys navigate between frames
-          if (
-            event.key === KEYS.ARROW_RIGHT ||
-            event.key === KEYS.ARROW_DOWN
-          ) {
+          if (event.key === KEYS.ARROW_RIGHT || event.key === KEYS.ARROW_DOWN) {
             event.preventDefault();
             const frames = this.scene
               .getNonDeletedElements()
@@ -4338,10 +4349,7 @@ class App extends React.Component<AppProps, AppState> {
             return;
           }
 
-          if (
-            event.key === KEYS.ARROW_LEFT ||
-            event.key === KEYS.ARROW_UP
-          ) {
+          if (event.key === KEYS.ARROW_LEFT || event.key === KEYS.ARROW_UP) {
             event.preventDefault();
             const newIndex = Math.max(
               this.state.presentationMode.frameIndex - 1,

@@ -6,7 +6,10 @@ import {
   reconcileElements,
 } from "@excalidraw/excalidraw";
 import { trackEvent } from "@excalidraw/excalidraw/analytics";
-import { getDefaultAppState, clearAppStateForLocalStorage } from "@excalidraw/excalidraw/appState";
+import {
+  getDefaultAppState,
+  clearAppStateForLocalStorage,
+} from "@excalidraw/excalidraw/appState";
 import {
   CommandPalette,
   DEFAULT_CATEGORIES,
@@ -46,15 +49,22 @@ import {
   share,
   youtubeIcon,
 } from "@excalidraw/excalidraw/components/icons";
-import { isElementLink, clearElementsForLocalStorage } from "@excalidraw/element";
+import {
+  isElementLink,
+  clearElementsForLocalStorage,
+} from "@excalidraw/element";
 import { restore, restoreAppState } from "@excalidraw/excalidraw/data/restore";
 import { newElementWith } from "@excalidraw/element";
 import { isInitializedImageElement } from "@excalidraw/element";
+import { sortFramesByPresentationOrder } from "@excalidraw/element/frame";
+
 import clsx from "clsx";
 import {
   parseLibraryTokensFromUrl,
   useHandleLibrary,
 } from "@excalidraw/excalidraw/data/library";
+
+import type { ExcalidrawFrameLikeElement } from "@excalidraw/element/types";
 
 import type { RemoteExcalidrawElement } from "@excalidraw/excalidraw/data/reconcile";
 import type { RestoredDataState } from "@excalidraw/excalidraw/data/restore";
@@ -439,7 +449,6 @@ const ExcalidrawWrapper = () => {
     }
   }, [excalidrawAPI]);
 
-
   useEffect(() => {
     if (!excalidrawAPI || (!isCollabDisabled && !collabAPI)) {
       return;
@@ -516,7 +525,7 @@ const ExcalidrawWrapper = () => {
       loadImages(data, /* isInitialLoad */ true);
       initialStatePromiseRef.current.promise.resolve(data.scene);
       // Clear presentation data when loading new scene
-      console.log('📂 初始加载场景:', {
+      console.log("📂 初始加载场景:", {
         elementCount: data.scene?.elements?.length,
         appStateName: data.scene?.appState?.name,
         firstElementId: data.scene?.elements?.[0]?.id?.slice(0, 8),
@@ -534,23 +543,29 @@ const ExcalidrawWrapper = () => {
         if (launchParams.files && launchParams.files.length > 0) {
           try {
             // Check if current window has content (elements) that would be overwritten
-            const currentElements = excalidrawAPI.getSceneElementsIncludingDeleted();
+            const currentElements =
+              excalidrawAPI.getSceneElementsIncludingDeleted();
             const hasContent = currentElements && currentElements.length > 0;
-            
-            console.log("launchQueue - current window has content:", hasContent);
+
+            console.log(
+              "launchQueue - current window has content:",
+              hasContent,
+            );
 
             if (hasContent) {
               // If current window has content, open file in a new window
               const newSessionId = generateUniqueSessionId();
-              const newUrl = new URL(window.location.origin + window.location.pathname);
-              newUrl.searchParams.set("session", newSessionId);
-              
-              console.log(
-                "launchQueue - opening file in new window to preserve current content"
+              const newUrl = new URL(
+                window.location.origin + window.location.pathname,
               );
-              
+              newUrl.searchParams.set("session", newSessionId);
+
+              console.log(
+                "launchQueue - opening file in new window to preserve current content",
+              );
+
               window.open(newUrl.toString(), "_blank");
-              
+
               // The new window will also get the launchQueue event and handle the file
               // since it's the same application instance
               return;
@@ -561,13 +576,20 @@ const ExcalidrawWrapper = () => {
             if (!urlParams.get("session")) {
               const newSessionId = generateUniqueSessionId();
               urlParams.set("session", newSessionId);
-              const newUrl = `${window.location.pathname}?${urlParams.toString()}${window.location.hash}`;
+              const newUrl = `${
+                window.location.pathname
+              }?${urlParams.toString()}${window.location.hash}`;
               window.history.replaceState({}, "", newUrl);
-              console.log("launchQueue - assigned unique session to current window:", newSessionId);
+              console.log(
+                "launchQueue - assigned unique session to current window:",
+                newSessionId,
+              );
             }
 
-            console.log("launchQueue - loading file in current window with isolated storage");
-            
+            console.log(
+              "launchQueue - loading file in current window with isolated storage",
+            );
+
             const fileHandle = launchParams.files[0] as FileSystemFileHandle;
             const file = await fileHandle.getFile();
             const { elements, appState, files } = await loadFromBlob(
@@ -592,7 +614,6 @@ const ExcalidrawWrapper = () => {
             if (files) {
               excalidrawAPI.addFiles(Object.values(files));
             }
-            
           } catch (error) {
             console.error("Failed to handle launched file:", error);
           }
@@ -615,7 +636,7 @@ const ExcalidrawWrapper = () => {
         initializeScene({ collabAPI, excalidrawAPI }).then((data) => {
           loadImages(data);
           // Clear presentation data when loading new scene
-          console.log('📂 hashchange 加载新场景，清除 presentationData');
+          console.log("📂 hashchange 加载新场景，清除 presentationData");
           setPresentationData(null);
           if (data.scene) {
             excalidrawAPI.updateScene({
@@ -760,14 +781,21 @@ const ExcalidrawWrapper = () => {
   useEffect(() => {
     const handleFullscreenChange = () => {
       // If user exits fullscreen while in presentation mode, exit presentation mode
-      if (!document.fullscreenElement && presentationData?.enabled && excalidrawAPI) {
-        console.log('🖥️ 全屏退出，自动退出演示模式');
+      if (
+        !document.fullscreenElement &&
+        presentationData?.enabled &&
+        excalidrawAPI
+      ) {
+        console.log("🖥️ 全屏退出，自动退出演示模式");
         const currentAppState = excalidrawAPI.getAppState();
         if (currentAppState.presentationMode?.enabled) {
           const previousState = currentAppState.presentationMode.previousState;
-          const frames = excalidrawAPI.getSceneElements().filter((e) => e.type === "frame");
-          const sortedFrames = [...frames].sort((e1, e2) => e1.y - e2.y);
-          const currentFrame = sortedFrames[currentAppState.presentationMode.frameIndex];
+          const frames = excalidrawAPI
+            .getSceneElements()
+            .filter((e) => e.type === "frame") as ExcalidrawFrameLikeElement[];
+          const sortedFrames = sortFramesByPresentationOrder(frames);
+          const currentFrame =
+            sortedFrames[currentAppState.presentationMode.frameIndex];
 
           excalidrawAPI.updateScene({
             appState: {
@@ -782,7 +810,8 @@ const ExcalidrawWrapper = () => {
               scrollX: previousState?.scrollX ?? currentAppState.scrollX,
               scrollY: previousState?.scrollY ?? currentAppState.scrollY,
               zoom: previousState?.zoom ?? currentAppState.zoom,
-              frameRendering: previousState?.frameRendering ?? currentAppState.frameRendering,
+              frameRendering:
+                previousState?.frameRendering ?? currentAppState.frameRendering,
             },
           });
         }
@@ -795,7 +824,6 @@ const ExcalidrawWrapper = () => {
     };
   }, [presentationData?.enabled, excalidrawAPI]);
 
-
   const onChange = (
     elements: readonly OrderedExcalidrawElement[],
     appState: AppState,
@@ -804,14 +832,16 @@ const ExcalidrawWrapper = () => {
     // Handle presentation mode state - sliding window mode
     if (appState.presentationMode?.enabled && !presentationData?.enabled) {
       // Entering presentation mode - save original scene data and enter fullscreen
-      console.log('🎭 进入滑动窗口演示模式:', {
+      console.log("🎭 进入滑动窗口演示模式:", {
         name: appState.name,
         elementCount: elements.length,
         frameIndex: appState.presentationMode.frameIndex,
       });
       setPresentationData({
         enabled: true,
-        elements: elements.filter(el => !el.isDeleted) as readonly NonDeletedExcalidrawElement[],
+        elements: elements.filter(
+          (el) => !el.isDeleted,
+        ) as readonly NonDeletedExcalidrawElement[],
         appState,
         frameIndex: appState.presentationMode.frameIndex,
         originalElements: elements,
@@ -826,18 +856,26 @@ const ExcalidrawWrapper = () => {
         });
       }
       // Don't return - allow normal rendering to continue
-    } else if (appState.presentationMode?.enabled && presentationData?.enabled) {
+    } else if (
+      appState.presentationMode?.enabled &&
+      presentationData?.enabled
+    ) {
       // Already in presentation mode, just update frame index if changed
-      if (presentationData.frameIndex !== appState.presentationMode.frameIndex) {
+      if (
+        presentationData.frameIndex !== appState.presentationMode.frameIndex
+      ) {
         setPresentationData({
           ...presentationData,
           frameIndex: appState.presentationMode.frameIndex,
         });
       }
       // Don't return - allow normal rendering to continue
-    } else if (!appState.presentationMode?.enabled && presentationData?.enabled) {
+    } else if (
+      !appState.presentationMode?.enabled &&
+      presentationData?.enabled
+    ) {
       // Exiting presentation mode - restore original data
-      console.log('🚪 退出滑动窗口演示模式');
+      console.log("🚪 退出滑动窗口演示模式");
 
       // Exit fullscreen if in fullscreen
       if (document.fullscreenElement) {
@@ -859,16 +897,17 @@ const ExcalidrawWrapper = () => {
     //   excalidrawAPI: !!excalidrawAPI
     // });
 
-    const nonDeletedElements = elements.filter(el => !el.isDeleted);
+    const nonDeletedElements = elements.filter((el) => !el.isDeleted);
 
     // 处理有内容的场景
     if (nonDeletedElements.length > 0) {
       // 检查是否是无标题或默认名称，需要智能命名
-      const isDefaultName = !appState.name ||
-                           appState.name.startsWith('无标题') ||
-                           appState.name === 'Untitled' ||
-                           appState.name.match(/^无标题-\d{4}-\d{2}-\d{2}-\d{4}$/) ||
-                           appState.name.match(/^Untitled-\d{4}-\d{2}-\d{2}-\d{4}$/);
+      const isDefaultName =
+        !appState.name ||
+        appState.name.startsWith("无标题") ||
+        appState.name === "Untitled" ||
+        appState.name.match(/^无标题-\d{4}-\d{2}-\d{2}-\d{4}$/) ||
+        appState.name.match(/^Untitled-\d{4}-\d{2}-\d{2}-\d{4}$/);
 
       if (appState.fileHandle) {
         // 有 fileHandle 的文件（通过文件系统打开的文件）
@@ -876,14 +915,18 @@ const ExcalidrawWrapper = () => {
         let fileName = appState.name || "未命名画板";
 
         // 如果文件名是默认格式但有 fileHandle，尝试从 fileHandle 获取真实文件名
-        if (isDefaultName && appState.fileHandle && 'name' in appState.fileHandle) {
+        if (
+          isDefaultName &&
+          appState.fileHandle &&
+          "name" in appState.fileHandle
+        ) {
           const fileSystemName = (appState.fileHandle as any).name;
           if (fileSystemName) {
             fileName = fileSystemName.replace(/\.excalidraw$/, "");
             // 更新 appState 中的名称以保持一致性
             if (excalidrawAPI && fileName !== appState.name) {
               excalidrawAPI.updateScene({
-                appState: { name: fileName }
+                appState: { name: fileName },
               });
             }
           }
@@ -891,7 +934,7 @@ const ExcalidrawWrapper = () => {
 
         // 如果有 fileHandle，始终优先使用 fileHandle 的名称而不是 appState.name
         // 这确保了每个不同的文件都有正确的唯一文件名
-        if (appState.fileHandle && 'name' in appState.fileHandle) {
+        if (appState.fileHandle && "name" in appState.fileHandle) {
           const fileSystemName = (appState.fileHandle as any).name;
           if (fileSystemName) {
             fileName = fileSystemName.replace(/\.excalidraw$/, "");
@@ -899,17 +942,16 @@ const ExcalidrawWrapper = () => {
         }
 
         const recentFiles = LocalData.getRecentFiles();
-        const existingFile = recentFiles.find(file => file.name === fileName);
+        const existingFile = recentFiles.find((file) => file.name === fileName);
 
         if (!existingFile) {
-
           // 记录到最近文件列表
           const timestamp = Date.now();
           const fileInfo = {
             name: fileName,
             lastModified: timestamp,
             isTemporary: false, // 通过文件系统打开的都是正式文件
-            description: LocalData.generateTimestampOnlyDescription(timestamp)
+            description: LocalData.generateTimestampOnlyDescription(timestamp),
           };
 
           const uniqueId = LocalData.addToRecentFiles(fileInfo);
@@ -924,12 +966,20 @@ const ExcalidrawWrapper = () => {
           }
         } else {
           // 静默更新已存在的场景数据，使用现有的ID
-          LocalData.saveTemporaryScene(existingFile.id, elements, appState, files);
+          LocalData.saveTemporaryScene(
+            existingFile.id,
+            elements,
+            appState,
+            files,
+          );
           // 更新最后修改时间
           LocalData.updateRecentFileTime(existingFile.id);
           // 保存该文件的 fileHandle，以便切换文件时恢复
           if (appState.fileHandle) {
-            LocalData.saveFileHandleForFile(existingFile.id, appState.fileHandle);
+            LocalData.saveFileHandleForFile(
+              existingFile.id,
+              appState.fileHandle,
+            );
           }
         }
       } else {
@@ -940,17 +990,28 @@ const ExcalidrawWrapper = () => {
 
           if (sessionFileId) {
             // 更新已存在的临时文件
-            LocalData.updateExistingTemporaryScene(sessionFileId, elements, appState, files);
+            LocalData.updateExistingTemporaryScene(
+              sessionFileId,
+              elements,
+              appState,
+              files,
+            );
           } else {
             // 创建新的临时文件
-            const result = LocalData.saveTemporarySceneWithSequentialName(elements, appState, files);
+            const result = LocalData.saveTemporarySceneWithSequentialName(
+              elements,
+              appState,
+              files,
+            );
             // 在会话中记录当前文件ID，避免重复创建
             (window as any).__currentTempFileId = result.id;
           }
         } else {
           // 有意义的文件名，检查是否已存在
           const recentFiles = LocalData.getRecentFiles();
-          const existingFile = recentFiles.find(file => file.name === appState.name);
+          const existingFile = recentFiles.find(
+            (file) => file.name === appState.name,
+          );
 
           if (!existingFile) {
             // 记录到最近文件列表
@@ -959,7 +1020,8 @@ const ExcalidrawWrapper = () => {
               name: appState.name || "未命名画板",
               lastModified: timestamp,
               isTemporary: false, // 有意义的文件名应该是正式文件，不是临时文件
-              description: LocalData.generateTimestampOnlyDescription(timestamp)
+              description:
+                LocalData.generateTimestampOnlyDescription(timestamp),
             };
 
             const uniqueId = LocalData.addToRecentFiles(fileInfo);
@@ -970,7 +1032,12 @@ const ExcalidrawWrapper = () => {
             }
           } else {
             // 静默更新已存在的场景数据，使用现有的ID
-            LocalData.saveTemporaryScene(existingFile.id, elements, appState, files);
+            LocalData.saveTemporaryScene(
+              existingFile.id,
+              elements,
+              appState,
+              files,
+            );
           }
         }
       }

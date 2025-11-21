@@ -23,7 +23,6 @@ export const AppMainMenu: React.FC<{
   setTheme: (theme: Theme | "system") => void;
   refresh: () => void;
 }> = React.memo((props) => {
-
   return (
     <MainMenu>
       <MainMenu.DefaultItems.LoadScene />

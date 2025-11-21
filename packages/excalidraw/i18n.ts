@@ -172,7 +172,9 @@ export const useI18n = () => {
     return { t, langCode };
   } catch (error) {
     // Fallback when EditorJotaiProvider is not available
-    console.warn('useI18n called outside EditorJotaiProvider context, using fallback');
+    console.warn(
+      "useI18n called outside EditorJotaiProvider context, using fallback",
+    );
     return { t, langCode: defaultLang.code };
   }
 };

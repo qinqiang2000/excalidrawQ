@@ -248,7 +248,9 @@ export const animate = (
     const avgFrameTime = (totalComputeTime + totalRenderTime) / frameCount;
     if (avgFrameTime > 16.67) {
       console.warn(
-        `[Presentation Performance] Animation may appear choppy! Avg frame time ${avgFrameTime.toFixed(2)}ms exceeds 16.67ms (60fps threshold)`,
+        `[Presentation Performance] Animation may appear choppy! Avg frame time ${avgFrameTime.toFixed(
+          2,
+        )}ms exceeds 16.67ms (60fps threshold)`,
       );
     }
 

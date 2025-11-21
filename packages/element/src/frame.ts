@@ -913,6 +913,35 @@ export const getDefaultFrameName = (element: ExcalidrawFrameLikeElement) => {
   return isFrameElement(element) ? DEFAULT_FRAME_NAME : DEFAULT_AI_FRAME_NAME;
 };
 
+/**
+ * Sort frames by presentation order.
+ * If presentationOrder is set, use it; otherwise fall back to Y-coordinate.
+ */
+export const sortFramesByPresentationOrder = (
+  frames: ExcalidrawFrameLikeElement[],
+): ExcalidrawFrameLikeElement[] => {
+  return [...frames].sort((f1, f2) => {
+    const order1 = f1.presentationOrder;
+    const order2 = f2.presentationOrder;
+
+    // Both have custom order - compare by order
+    if (order1 != null && order2 != null) {
+      return order1 - order2;
+    }
+
+    // Only one has custom order - the one with order comes first
+    if (order1 != null) {
+      return -1;
+    }
+    if (order2 != null) {
+      return 1;
+    }
+
+    // Neither has custom order - fall back to Y coordinate
+    return f1.y - f2.y;
+  });
+};
+
 export const getFrameLikeTitle = (element: ExcalidrawFrameLikeElement) => {
   return element.name === null ? getDefaultFrameName(element) : element.name;
 };
@@ -948,7 +977,7 @@ export const frameAndChildrenSelectedTogether = (
 
 /**
  * Get the presentation order index (1-based) of a frame element.
- * Frames are ordered by their Y-axis position.
+ * Frames are ordered by presentationOrder if set, otherwise by Y-axis position.
  * Returns null if the element is not found in the frames list.
  */
 export const getFrameOrderIndex = (
@@ -957,14 +986,30 @@ export const getFrameOrderIndex = (
 ): number | null => {
   const frames = getFrameLikeElements(Array.from(allElements.values()));
 
-  // Sort frames by Y position (same logic as presentation mode)
-  const sortedFrames = frames
-    .filter((f) => !f.isDeleted)
-    .sort((f1, f2) => f1.y - f2.y);
+  // Sort frames by presentation order (with Y-coordinate fallback)
+  const sortedFrames = sortFramesByPresentationOrder(
+    frames.filter((f) => !f.isDeleted),
+  );
 
   const index = sortedFrames.findIndex((f) => f.id === targetFrame.id);
 
   return index === -1 ? null : index + 1; // 1-based index
+};
+
+/**
+ * Update presentation order for all frames based on new order.
+ * @param frames - Array of frames in the desired order
+ * @param elementsMap - Map of all elements for mutation
+ */
+export const updateFramesPresentationOrder = (
+  frames: ExcalidrawFrameLikeElement[],
+  elementsMap: ElementsMap,
+): void => {
+  frames.forEach((frame, index) => {
+    mutateElement(frame, elementsMap, {
+      presentationOrder: index + 1,
+    });
+  });
 };
 
 /**
