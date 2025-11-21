@@ -161,11 +161,13 @@ upload_code_only() {
     # 显示压缩包大小
     echo "压缩包大小: $(du -sh /tmp/excalidraw-build.tar.gz | cut -f1)"
 
-    # 2. rsync 传输压缩包（支持断点续传）
-    echo "📤 上传压缩包（支持断点续传）..."
-    rsync -avz --partial --progress \
-        -e "ssh -i ~/tools/pem/ty_sg01.pem" \
+    # 2. rsync 传输压缩包（优化速度，支持断点续传）
+    echo "📤 上传压缩包..."
+    rsync -av --partial --progress \
+        -e "ssh -i ~/tools/pem/ty_sg01.pem -o Compression=no -c aes128-gcm@openssh.com" \
         /tmp/excalidraw-build.tar.gz root@129.226.88.226:/tmp/
+
+    echo "✅ 文件传输完成"
 
     # 3. 远程解压
     echo "📂 远程解压文件..."

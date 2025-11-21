@@ -104,6 +104,8 @@ import {
   isMobile,
   MINIMUM_ARROW_SIZE,
   DOUBLE_TAP_POSITION_THRESHOLD,
+  FRAME_ORDER_TAB,
+  DEFAULT_SIDEBAR,
 } from "@excalidraw/common";
 
 import {
@@ -2868,6 +2870,41 @@ class App extends React.Component<AppProps, AppState> {
           // Use 0.9 to leave some margin and avoid showing adjacent frames
           viewportZoomFactor: 0.9,
         });
+      }
+    }
+
+    // Auto-open frame order panel when selecting frame(s) and there are 2+ frames
+    const prevSelectedIds = Object.keys(prevState.selectedElementIds);
+    const currentSelectedIds = Object.keys(this.state.selectedElementIds);
+    const selectionChanged =
+      prevSelectedIds.length !== currentSelectedIds.length ||
+      prevSelectedIds.some((id) => !this.state.selectedElementIds[id]);
+
+    if (selectionChanged && currentSelectedIds.length > 0) {
+      const allFrames = this.scene
+        .getNonDeletedElements()
+        .filter((e) => e.type === "frame");
+
+      // Only proceed if there are 2+ frames on canvas
+      if (allFrames.length >= 2) {
+        const selectedElements = currentSelectedIds
+          .map((id) => this.scene.getElement(id))
+          .filter(Boolean);
+
+        // Check if any selected element is a frame
+        const hasSelectedFrame = selectedElements.some(
+          (el) => el && el.type === "frame",
+        );
+
+        if (hasSelectedFrame) {
+          // Auto-open frame order panel
+          this.setState({
+            openSidebar: {
+              name: DEFAULT_SIDEBAR.name,
+              tab: FRAME_ORDER_TAB,
+            },
+          });
+        }
       }
     }
 
