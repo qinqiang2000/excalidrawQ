@@ -531,6 +531,19 @@ const ExcalidrawWrapper = () => {
         firstElementId: data.scene?.elements?.[0]?.id?.slice(0, 8),
       });
       setPresentationData(null);
+
+      // Check if fileHandle needs permission and show toast
+      const appState = data.scene?.appState as any;
+      if (appState?.fileHandleNeedsPermission && appState?.fileHandle) {
+        // Show toast to inform user about permission requirement
+        setTimeout(() => {
+          excalidrawAPI.setToast({
+            message: "文件访问权限已过期，请按 Ctrl+S 重新授权以继续自动保存",
+            duration: 8000,
+            closable: true,
+          });
+        }, 1000);
+      }
     });
 
     // Handle PWA file launching via launchQueue

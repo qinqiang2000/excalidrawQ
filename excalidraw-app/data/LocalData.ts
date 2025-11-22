@@ -64,8 +64,14 @@ const getStorageId = () => {
 
 const storageId = getStorageId();
 const filesStore = createStore(`files-db-${storageId}`, "files-store");
+// Session-isolated fileHandle store (for current session's active fileHandle)
 const fileHandleStore = createStore(
   `fileHandle-db-${storageId}`,
+  "fileHandle-store",
+);
+// Global fileHandle store (for recent files - not session isolated)
+const globalFileHandleStore = createStore(
+  "fileHandle-db-global",
   "fileHandle-store",
 );
 
@@ -172,6 +178,23 @@ export class LocalData {
     ) => {
       // Only auto-save to file if we have a fileHandle and it's not an image file
       if (appState.fileHandle && !isImageFileHandle(appState.fileHandle)) {
+        // Check permission before attempting to save
+        const permission = await this.queryFileHandlePermission(
+          appState.fileHandle,
+        );
+
+        // If permission is not granted, skip auto-save to avoid dialog popup
+        if (permission !== "granted") {
+          // Don't auto-save if we don't have permission
+          // User needs to manually trigger save to get permission prompt
+          console.info(
+            "Auto-save skipped: fileHandle permission not granted (current:",
+            permission,
+            ")",
+          );
+          return;
+        }
+
         // Calculate current content hash for file saving
         const currentFileHash = this.hashContent(elements, appState, files);
 
@@ -190,8 +213,9 @@ export class LocalData {
           // Update file content hash after successful save
           this.lastFileContentHash = currentFileHash;
         } catch (error: any) {
-          // Silent failure to avoid disrupting user experience
-          // Only log to console for debugging
+          // If save failed, it might be due to permission issues
+          // Clear the file hash so next save attempt will try again
+          this.lastFileContentHash = null;
           console.warn("Auto-save to file failed:", error);
         }
       }
@@ -298,16 +322,152 @@ export class LocalData {
     }
   };
 
-  /** Save FileHandle for a specific file ID to IndexedDB */
+  /**
+   * Check if fileHandle has write permission
+   * @returns 'granted' | 'denied' | 'prompt' | null (if not supported or error)
+   */
+  static queryFileHandlePermission = async (
+    fileHandle: FileSystemHandle | null,
+  ): Promise<"granted" | "denied" | "prompt" | null> => {
+    if (!fileHandle) {
+      return null;
+    }
+
+    try {
+      // Check if queryPermission is supported (File System Access API)
+      // Use type assertion via unknown for File System Access API methods
+      const handle = fileHandle as unknown as {
+        queryPermission?: (options: {
+          mode: "read" | "readwrite";
+        }) => Promise<"granted" | "denied" | "prompt">;
+      };
+
+      if (handle.queryPermission) {
+        const permission = await handle.queryPermission({
+          mode: "readwrite",
+        });
+        return permission;
+      }
+      return null;
+    } catch (error) {
+      console.warn("Failed to query fileHandle permission:", error);
+      return null;
+    }
+  };
+
+  /**
+   * Request write permission for fileHandle (requires user gesture)
+   * @returns true if permission granted, false otherwise
+   */
+  static requestFileHandlePermission = async (
+    fileHandle: FileSystemHandle | null,
+  ): Promise<boolean> => {
+    if (!fileHandle) {
+      return false;
+    }
+
+    try {
+      // Check if requestPermission is supported (File System Access API)
+      // Use type assertion via unknown for File System Access API methods
+      const handle = fileHandle as unknown as {
+        requestPermission?: (options: {
+          mode: "read" | "readwrite";
+        }) => Promise<"granted" | "denied" | "prompt">;
+      };
+
+      if (handle.requestPermission) {
+        const permission = await handle.requestPermission({
+          mode: "readwrite",
+        });
+        return permission === "granted";
+      }
+      return false;
+    } catch (error) {
+      console.warn("Failed to request fileHandle permission:", error);
+      return false;
+    }
+  };
+
+  /**
+   * Verify fileHandle permission and clear if invalid
+   * @returns fileHandle if valid with permission, null otherwise
+   */
+  static verifyFileHandlePermission = async (
+    fileHandle: FileSystemHandle | null,
+  ): Promise<FileSystemHandle | null> => {
+    if (!fileHandle) {
+      return null;
+    }
+
+    const permission = await this.queryFileHandlePermission(fileHandle);
+
+    // If permission is granted, return the fileHandle
+    if (permission === "granted") {
+      return fileHandle;
+    }
+
+    // If permission is 'prompt', we can request it later with user gesture
+    // Return the fileHandle but mark it as needing permission
+    if (permission === "prompt") {
+      return fileHandle;
+    }
+
+    // If permission is denied or null, clear the invalid fileHandle
+    if (permission === "denied") {
+      console.warn("FileHandle permission denied, clearing invalid handle");
+      await this.saveFileHandle(null);
+      return null;
+    }
+
+    return fileHandle;
+  };
+
+  /**
+   * Load fileHandle and verify its permission status
+   * @returns { fileHandle, needsPermission } - fileHandle and whether it needs permission request
+   */
+  static loadFileHandleWithPermissionCheck = async (): Promise<{
+    fileHandle: FileSystemHandle | null;
+    needsPermission: boolean;
+  }> => {
+    const fileHandle = await this.loadFileHandle();
+
+    if (!fileHandle) {
+      return { fileHandle: null, needsPermission: false };
+    }
+
+    const permission = await this.queryFileHandlePermission(fileHandle);
+
+    if (permission === "granted") {
+      return { fileHandle, needsPermission: false };
+    }
+
+    if (permission === "prompt") {
+      // Permission can be requested, but needs user gesture
+      return { fileHandle, needsPermission: true };
+    }
+
+    // Permission denied or error - clear invalid handle
+    if (permission === "denied") {
+      await this.saveFileHandle(null);
+      return { fileHandle: null, needsPermission: false };
+    }
+
+    // For null permission (API not supported), return handle as-is
+    return { fileHandle, needsPermission: false };
+  };
+
+  /** Save FileHandle for a specific file ID to IndexedDB (global store for recent files) */
   static saveFileHandleForFile = async (
     fileId: string,
     fileHandle: FileSystemHandle | null,
   ) => {
     try {
       if (fileHandle) {
-        await set(`fileHandle-${fileId}`, fileHandle, fileHandleStore);
+        // Use global store so fileHandle is accessible across sessions
+        await set(`fileHandle-${fileId}`, fileHandle, globalFileHandleStore);
       } else {
-        await del(`fileHandle-${fileId}`, fileHandleStore);
+        await del(`fileHandle-${fileId}`, globalFileHandleStore);
       }
     } catch (error) {
       console.warn(
@@ -317,12 +477,15 @@ export class LocalData {
     }
   };
 
-  /** Load FileHandle for a specific file ID from IndexedDB */
+  /** Load FileHandle for a specific file ID from IndexedDB (global store for recent files) */
   static loadFileHandleForFile = async (
     fileId: string,
   ): Promise<FileSystemHandle | null> => {
     try {
-      return (await get(`fileHandle-${fileId}`, fileHandleStore)) || null;
+      // Use global store so fileHandle is accessible across sessions
+      return (
+        (await get(`fileHandle-${fileId}`, globalFileHandleStore)) || null
+      );
     } catch (error) {
       console.warn(
         `Failed to load fileHandle for file ${fileId} from IndexedDB:`,
@@ -330,6 +493,38 @@ export class LocalData {
       );
       return null;
     }
+  };
+
+  /** Load FileHandle for a specific file ID with permission check */
+  static loadFileHandleForFileWithPermissionCheck = async (
+    fileId: string,
+  ): Promise<{
+    fileHandle: FileSystemHandle | null;
+    needsPermission: boolean;
+  }> => {
+    const fileHandle = await this.loadFileHandleForFile(fileId);
+
+    if (!fileHandle) {
+      return { fileHandle: null, needsPermission: false };
+    }
+
+    const permission = await this.queryFileHandlePermission(fileHandle);
+
+    if (permission === "granted") {
+      return { fileHandle, needsPermission: false };
+    }
+
+    if (permission === "prompt") {
+      return { fileHandle, needsPermission: true };
+    }
+
+    // Permission denied - clear invalid handle
+    if (permission === "denied") {
+      await this.saveFileHandleForFile(fileId, null);
+      return { fileHandle: null, needsPermission: false };
+    }
+
+    return { fileHandle, needsPermission: false };
   };
 
   // ---------------------------------------------------------------------------

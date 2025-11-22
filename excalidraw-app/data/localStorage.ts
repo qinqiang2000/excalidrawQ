@@ -88,9 +88,12 @@ export const importFromLocalStorageWithFileHandle = async () => {
   // Load fileHandle from IndexedDB if appState exists
   if (appState) {
     try {
-      const fileHandle = await LocalData.loadFileHandle();
+      const { fileHandle, needsPermission } =
+        await LocalData.loadFileHandleWithPermissionCheck();
       if (fileHandle) {
         appState.fileHandle = fileHandle;
+        // Store permission status for UI to handle
+        (appState as any).fileHandleNeedsPermission = needsPermission;
       }
     } catch (error) {
       console.warn("Failed to load fileHandle:", error);

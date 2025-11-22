@@ -199,8 +199,9 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
 
     if (sceneData) {
       try {
-        // 尝试恢复该文件的 fileHandle
-        const fileHandle = await LocalData.loadFileHandleForFile(file.id);
+        // 尝试恢复该文件的 fileHandle (with permission check)
+        const { fileHandle, needsPermission } =
+          await LocalData.loadFileHandleForFileWithPermissionCheck(file.id);
 
         // 使用 excalidrawAPI 加载场景
         api.updateScene({
@@ -219,6 +220,18 @@ export const RecentFilesButton: React.FC<RecentFilesButtonProps> = ({
 
         // 关键修复：更新当前文件ID追踪，防止文件内容相互覆盖
         (window as any).__currentTempFileId = file.id;
+
+        // Show toast if fileHandle needs permission
+        if (needsPermission && fileHandle) {
+          setTimeout(() => {
+            api.setToast({
+              message:
+                "文件访问权限已过期，请按 Ctrl+S 重新授权以继续自动保存",
+              duration: 8000,
+              closable: true,
+            });
+          }, 500);
+        }
 
         setIsOpen(false); // 加载成功后关闭菜单
       } catch (error) {
