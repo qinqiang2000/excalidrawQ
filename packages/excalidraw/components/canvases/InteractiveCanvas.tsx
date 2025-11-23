@@ -216,6 +216,7 @@ const getRelevantAppStateProps = (
   croppingElementId: appState.croppingElementId,
   searchMatches: appState.searchMatches,
   activeLockedId: appState.activeLockedId,
+  showCollapseIcons: appState.showCollapseIcons,
 });
 
 const areEqual = (

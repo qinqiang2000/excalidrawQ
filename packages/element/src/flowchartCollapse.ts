@@ -1,3 +1,4 @@
+import { getElementsInGroup } from "./groups";
 import { isElbowArrow, isFlowchartNodeElement } from "./typeChecks";
 import type {
   ElementsMap,
@@ -184,6 +185,54 @@ const getDirectionFromBindingPoint = (
 };
 
 /**
+ * Check if a flowchart node is collapsed by its flowchart parent (via arrows).
+ * This is a helper function to avoid infinite recursion when checking group members.
+ */
+const isNodeCollapsedByFlowchartParent = (
+  nodeId: string,
+  elementsMap: ElementsMap,
+  visited: Set<string> = new Set(),
+): boolean => {
+  if (visited.has(nodeId)) {
+    return false;
+  }
+  visited.add(nodeId);
+
+  const incomingArrows = getIncomingArrows(nodeId, elementsMap);
+
+  for (const arrow of incomingArrows) {
+    const parentElement = elementsMap.get(arrow.startBinding!.elementId);
+    if (
+      parentElement &&
+      !parentElement.isDeleted &&
+      isFlowchartNodeElement(parentElement)
+    ) {
+      // Check if parent is collapsed in the direction of the binding point
+      const childElement = elementsMap.get(nodeId);
+      if (!childElement) {
+        continue;
+      }
+      const direction =
+        arrow.startBinding && "fixedPoint" in arrow.startBinding
+          ? getDirectionFromBindingPoint(
+              (arrow.startBinding as FixedPointBinding).fixedPoint,
+            )
+          : getDirectionFromParentToChild(parentElement, childElement);
+      if (parentElement.collapsed?.[direction]) {
+        return true;
+      }
+
+      // Also check grandparents
+      if (isNodeCollapsedByFlowchartParent(parentElement.id, elementsMap, visited)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
+/**
  * Check if an element should be hidden because one of its ancestors is collapsed.
  */
 export const isElementCollapsedByAncestor = (
@@ -237,6 +286,25 @@ export const isElementCollapsedByAncestor = (
     if (textElement.containerId) {
       if (isElementCollapsedByAncestor(textElement.containerId, elementsMap)) {
         return true;
+      }
+    }
+  }
+
+  // Handle group elements: if any flowchart node in the group is hidden, all group members should be hidden
+  if (element.groupIds.length > 0) {
+    for (const groupId of element.groupIds) {
+      const groupMembers = getElementsInGroup(elementsMap, groupId);
+      for (const member of groupMembers) {
+        // Skip self to avoid checking the same element
+        if (member.id === elementId) {
+          continue;
+        }
+        // Check if this group member is a flowchart node that is collapsed by its parent
+        if (isFlowchartNodeElement(member)) {
+          if (isNodeCollapsedByFlowchartParent(member.id, elementsMap)) {
+            return true;
+          }
+        }
       }
     }
   }

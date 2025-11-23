@@ -300,6 +300,7 @@ import {
   actionToggleGridMode,
   actionToggleStats,
   actionToggleZenMode,
+  actionToggleCollapseIcons,
   actionUnbindText,
   actionBindText,
   actionUngroup,
@@ -11396,6 +11397,7 @@ class App extends React.Component<AppProps, AppState> {
           actionToggleZenMode,
           actionToggleViewMode,
           actionToggleStats,
+          actionToggleCollapseIcons,
         ];
       }
 
@@ -11414,6 +11416,7 @@ class App extends React.Component<AppProps, AppState> {
         actionToggleZenMode,
         actionToggleViewMode,
         actionToggleStats,
+        actionToggleCollapseIcons,
       ];
     }
 

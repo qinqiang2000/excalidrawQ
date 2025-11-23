@@ -1205,8 +1205,10 @@ const _renderInteractiveScene = ({
     }
   });
 
-  // Render collapse/expand icons for flowchart nodes
-  renderCollapseIcons(context, appState, elementsMap, allElementsMap);
+  // Render collapse/expand icons for flowchart nodes (only when enabled)
+  if (appState.showCollapseIcons) {
+    renderCollapseIcons(context, appState, elementsMap, allElementsMap);
+  }
 
   renderSnaps(context, appState);
 

@@ -12,6 +12,7 @@ import {
   actionShortcuts,
   actionToggleSearchMenu,
   actionToggleTheme,
+  actionToggleCollapseIcons,
 } from "../../actions";
 import { getShortcutFromShortcutName } from "../../actions/shortcuts";
 import { trackEvent } from "../../analytics";
@@ -33,6 +34,7 @@ import DropdownMenuItemLink from "../dropdownMenu/DropdownMenuItemLink";
 import { GithubIcon, DiscordIcon, XBrandIcon } from "../icons";
 import {
   boltIcon,
+  collapseIconsIcon,
   DeviceDesktopIcon,
   ExportIcon,
   ExportImageIcon,
@@ -294,6 +296,42 @@ export const ToggleTheme = (
   );
 };
 ToggleTheme.displayName = "ToggleTheme";
+
+export const ToggleCollapseIcons = () => {
+  const { t } = useI18n();
+  const appState = useUIAppState();
+  const actionManager = useExcalidrawActionManager();
+
+  return (
+    <div className="dropdown-menu-item-base dropdown-menu-item-bare">
+      <label className="dropdown-menu-item__text" htmlFor="collapseIcons">
+        {t("labels.collapseIcons")}
+      </label>
+      <div className="RadioGroup">
+        <div
+          className={clsx("RadioGroup__choice", {
+            active: appState.showCollapseIcons,
+          })}
+          title={t("labels.showCollapseIcons")}
+          onClick={() => actionManager.executeAction(actionToggleCollapseIcons)}
+        >
+          <input
+            name="collapseIcons"
+            id="collapseIcons"
+            type="checkbox"
+            checked={appState.showCollapseIcons}
+            onChange={() =>
+              actionManager.executeAction(actionToggleCollapseIcons)
+            }
+            aria-label={t("labels.showCollapseIcons")}
+          />
+          {collapseIconsIcon}
+        </div>
+      </div>
+    </div>
+  );
+};
+ToggleCollapseIcons.displayName = "ToggleCollapseIcons";
 
 export const ChangeCanvasBackground = () => {
   const { t } = useI18n();

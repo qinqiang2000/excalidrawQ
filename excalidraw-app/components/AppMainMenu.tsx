@@ -78,6 +78,7 @@ export const AppMainMenu: React.FC<{
         </MainMenu.Item>
       )}
       <MainMenu.Separator />
+      <MainMenu.DefaultItems.ToggleCollapseIcons />
       <MainMenu.DefaultItems.ToggleTheme
         allowSystemTheme
         theme={props.theme}

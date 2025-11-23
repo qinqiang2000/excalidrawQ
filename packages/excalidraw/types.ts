@@ -233,6 +233,8 @@ export type InteractiveCanvasAppState = Readonly<
     // Search matches
     searchMatches: AppState["searchMatches"];
     activeLockedId: AppState["activeLockedId"];
+    // Collapse icons
+    showCollapseIcons: AppState["showCollapseIcons"];
   }
 >;
 
@@ -385,6 +387,7 @@ export interface AppState {
   gridStep: number;
   gridModeEnabled: boolean;
   viewModeEnabled: boolean;
+  showCollapseIcons: boolean;
 
   /** top-most selected groups (i.e. does not include nested groups) */
   selectedGroupIds: { [groupId: string]: boolean };

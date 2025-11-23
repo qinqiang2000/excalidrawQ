@@ -59,6 +59,7 @@ export type ActionName =
   | "gridMode"
   | "zenMode"
   | "objectsSnapMode"
+  | "toggleCollapseIcons"
   | "stats"
   | "changeStrokeColor"
   | "changeBackgroundColor"

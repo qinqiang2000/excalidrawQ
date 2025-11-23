@@ -2206,6 +2206,25 @@ export const gridIcon = createIcon(
   tablerIconProps,
 );
 
+// collapse icons toggle icon (tree structure with +/- indicator)
+export const collapseIconsIcon = createIcon(
+  <g strokeWidth={1.5}>
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    {/* Main node */}
+    <rect x={3} y={3} width={6} height={6} rx={1} />
+    {/* Connection lines */}
+    <path d="M9 6h3v6h3" />
+    <path d="M12 12v6h3" />
+    {/* Child nodes */}
+    <rect x={15} y={9} width={6} height={6} rx={1} />
+    <rect x={15} y={15} width={6} height={6} rx={1} />
+    {/* Plus indicator on main node */}
+    <path d="M4.5 6h3" />
+    <path d="M6 4.5v3" />
+  </g>,
+  tablerIconProps,
+);
+
 export const lineEditorIcon = createIcon(
   <g strokeWidth={1.5}>
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
