@@ -4,6 +4,8 @@ import type {
   ExcalidrawArrowElement,
   ExcalidrawElement,
   ExcalidrawFlowchartNodeElement,
+  ExcalidrawTextElement,
+  FixedPointBinding,
 } from "./types";
 import type { Scene } from "./Scene";
 
@@ -154,6 +156,34 @@ const getDirectionFromParentToChild = (
 };
 
 /**
+ * Get the direction based on the arrow's start binding fixedPoint.
+ * fixedPoint is [x, y] where x and y are ratios (0-1) on the parent element.
+ */
+const getDirectionFromBindingPoint = (
+  fixedPoint: [number, number],
+): LinkDirection => {
+  const [fx, fy] = fixedPoint;
+
+  // Determine which edge the binding point is closest to
+  const distToTop = fy;
+  const distToBottom = 1 - fy;
+  const distToLeft = fx;
+  const distToRight = 1 - fx;
+
+  const minDist = Math.min(distToTop, distToBottom, distToLeft, distToRight);
+
+  if (minDist === distToTop) {
+    return "up";
+  } else if (minDist === distToBottom) {
+    return "down";
+  } else if (minDist === distToLeft) {
+    return "left";
+  } else {
+    return "right";
+  }
+};
+
+/**
  * Check if an element should be hidden because one of its ancestors is collapsed.
  */
 export const isElementCollapsedByAncestor = (
@@ -172,11 +202,16 @@ export const isElementCollapsedByAncestor = (
 
     if (startBinding && endBinding) {
       const startElement = elementsMap.get(startBinding.elementId);
-      const endElement = elementsMap.get(endBinding.elementId);
 
-      if (startElement && endElement && isFlowchartNodeElement(startElement)) {
-        // Check if start node is collapsed in the direction towards end node
-        const direction = getDirectionFromParentToChild(startElement, endElement);
+      if (startElement && isFlowchartNodeElement(startElement)) {
+        // Check if start node is collapsed in the direction of the binding point
+        const direction =
+          "fixedPoint" in startBinding
+            ? getDirectionFromBindingPoint(startBinding.fixedPoint)
+            : getDirectionFromParentToChild(
+                startElement,
+                elementsMap.get(endBinding.elementId)!,
+              );
         if (startElement.collapsed?.[direction]) {
           return true;
         }
@@ -196,6 +231,16 @@ export const isElementCollapsedByAncestor = (
     return false;
   }
 
+  // Handle bound text elements: if container is hidden, text should also be hidden
+  if (element.type === "text") {
+    const textElement = element as ExcalidrawTextElement;
+    if (textElement.containerId) {
+      if (isElementCollapsedByAncestor(textElement.containerId, elementsMap)) {
+        return true;
+      }
+    }
+  }
+
   // For regular elements, check parent relationships with direction
   const incomingArrows = getIncomingArrows(elementId, elementsMap);
 
@@ -206,8 +251,13 @@ export const isElementCollapsedByAncestor = (
       !parentElement.isDeleted &&
       isFlowchartNodeElement(parentElement)
     ) {
-      // Check if parent is collapsed in the direction towards this element
-      const direction = getDirectionFromParentToChild(parentElement, element);
+      // Check if parent is collapsed in the direction of the binding point
+      const direction =
+        arrow.startBinding && "fixedPoint" in arrow.startBinding
+          ? getDirectionFromBindingPoint(
+              (arrow.startBinding as FixedPointBinding).fixedPoint,
+            )
+          : getDirectionFromParentToChild(parentElement, element);
       if (parentElement.collapsed?.[direction]) {
         return true;
       }
@@ -335,6 +385,7 @@ export const getCollapseIconPositions = (
 
 /**
  * Get the directions of all children relative to the parent node.
+ * Uses the arrow's start binding point to determine direction.
  */
 const getChildDirections = (
   nodeId: string,
@@ -352,7 +403,19 @@ const getChildDirections = (
   for (const arrow of arrows) {
     const childElement = elementsMap.get(arrow.endBinding!.elementId);
     if (childElement && !childElement.isDeleted) {
-      directions.push(getDirectionFromParentToChild(parentElement, childElement));
+      // Use the arrow's start binding fixedPoint to determine direction
+      if (arrow.startBinding && "fixedPoint" in arrow.startBinding) {
+        directions.push(
+          getDirectionFromBindingPoint(
+            (arrow.startBinding as FixedPointBinding).fixedPoint,
+          ),
+        );
+      } else {
+        // Fallback to coordinate-based direction
+        directions.push(
+          getDirectionFromParentToChild(parentElement, childElement),
+        );
+      }
     }
   }
 
