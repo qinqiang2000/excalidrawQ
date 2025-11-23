@@ -198,6 +198,9 @@ import {
   FlowChartCreator,
   FlowChartNavigator,
   getLinkDirectionFromKey,
+  getCollapseIconPositions,
+  isPointInCollapseIcon,
+  toggleCollapse,
   cropElement,
   wrapText,
   isElementLink,
@@ -6914,6 +6917,11 @@ class App extends React.Component<AppProps, AppState> {
     this.clearSelectionIfNotUsingSelection();
     this.updateBindingEnabledOnPointerMove(event);
 
+    // Check if clicking on a collapse/expand icon
+    if (this.handleCollapseIconClick(event)) {
+      return;
+    }
+
     if (this.handleSelectionOnPointerDown(event, pointerDownState)) {
       return;
     }
@@ -7435,6 +7443,34 @@ class App extends React.Component<AppProps, AppState> {
         hasOccurred: false,
       },
     };
+  }
+
+  // Returns whether the event is clicking on a collapse/expand icon
+  private handleCollapseIconClick(
+    event: React.PointerEvent<HTMLElement>,
+  ): boolean {
+    const { clientX, clientY } = event;
+    const scenePointer = viewportCoordsToSceneCoords(
+      { clientX, clientY },
+      this.state,
+    );
+
+    const elementsMap = this.scene.getNonDeletedElementsMap();
+    const collapsePositions = getCollapseIconPositions(elementsMap);
+
+    for (const pos of collapsePositions) {
+      if (isPointInCollapseIcon(scenePointer, pos, this.state.zoom.value)) {
+        // Toggle the collapse state for this specific direction
+        toggleCollapse(pos.nodeId, pos.direction, this.scene);
+
+        // Trigger re-render
+        this.scene.triggerUpdate();
+
+        return true;
+      }
+    }
+
+    return false;
   }
 
   // Returns whether the event is a dragging a scrollbar

@@ -524,12 +524,6 @@ const ExcalidrawWrapper = () => {
     initializeScene({ collabAPI, excalidrawAPI }).then(async (data) => {
       loadImages(data, /* isInitialLoad */ true);
       initialStatePromiseRef.current.promise.resolve(data.scene);
-      // Clear presentation data when loading new scene
-      console.log("📂 初始加载场景:", {
-        elementCount: data.scene?.elements?.length,
-        appStateName: data.scene?.appState?.name,
-        firstElementId: data.scene?.elements?.[0]?.id?.slice(0, 8),
-      });
       setPresentationData(null);
 
       // Check if fileHandle needs permission and show toast

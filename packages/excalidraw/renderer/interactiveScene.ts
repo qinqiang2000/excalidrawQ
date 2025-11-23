@@ -16,33 +16,31 @@ import {
   throttleRAF,
 } from "@excalidraw/common";
 
-import { FIXED_BINDING_DISTANCE, maxBindingGap } from "@excalidraw/element";
-import { LinearElementEditor } from "@excalidraw/element";
 import {
+  FIXED_BINDING_DISTANCE,
+  maxBindingGap,
+  LinearElementEditor,
   getOmitSidesForDevice,
   getTransformHandles,
   getTransformHandlesFromCoords,
   shouldShowBoundingBox,
-} from "@excalidraw/element";
-import {
   isElbowArrow,
   isFrameLikeElement,
   isImageElement,
   isLinearElement,
   isLineElement,
   isTextElement,
-} from "@excalidraw/element";
-
-import { renderSelectionElement } from "@excalidraw/element";
-
-import {
+  isFlowchartNodeElement,
+  getCollapseIconPositions,
+  renderSelectionElement,
   getElementsInGroup,
   getSelectedGroupIds,
   isSelectedViaGroup,
   selectGroupsFromGivenElements,
+  getCommonBounds,
+  getElementAbsoluteCoords,
+  type CollapseIconPosition,
 } from "@excalidraw/element";
-
-import { getCommonBounds, getElementAbsoluteCoords } from "@excalidraw/element";
 
 import type {
   SuggestedBinding,
@@ -725,6 +723,66 @@ const renderTextBox = (
   context.restore();
 };
 
+const renderCollapseIcons = (
+  context: CanvasRenderingContext2D,
+  appState: InteractiveCanvasAppState,
+  elementsMap: ElementsMap,
+  allElementsMap: ElementsMap,
+) => {
+  const collapsePositions = getCollapseIconPositions(allElementsMap);
+
+  if (collapsePositions.length === 0) {
+    return;
+  }
+
+  context.save();
+  context.translate(appState.scrollX, appState.scrollY);
+
+  const iconSize = 16 / appState.zoom.value;
+  const halfSize = iconSize / 2;
+  const lineWidth = 2 / appState.zoom.value;
+  const padding = 3 / appState.zoom.value;
+
+  for (const pos of collapsePositions) {
+    const element = allElementsMap.get(pos.nodeId);
+    if (!element || !isFlowchartNodeElement(element)) {
+      continue;
+    }
+
+    const isCollapsed = element.collapsed?.[pos.direction];
+    const { x, y } = pos;
+
+    // Draw icon background (circle)
+    context.beginPath();
+    context.arc(x, y, halfSize, 0, Math.PI * 2);
+    context.fillStyle = appState.theme === THEME.LIGHT ? "#ffffff" : "#1e1e1e";
+    context.fill();
+    context.strokeStyle = appState.theme === THEME.LIGHT ? "#adb5bd" : "#555555";
+    context.lineWidth = 1 / appState.zoom.value;
+    context.stroke();
+
+    // Draw +/- symbol
+    context.beginPath();
+    context.strokeStyle = appState.theme === THEME.LIGHT ? "#495057" : "#adb5bd";
+    context.lineWidth = lineWidth;
+    context.lineCap = "round";
+
+    // Horizontal line (always present)
+    context.moveTo(x - halfSize + padding, y);
+    context.lineTo(x + halfSize - padding, y);
+
+    // Vertical line (only for collapsed state - shows + sign)
+    if (isCollapsed) {
+      context.moveTo(x, y - halfSize + padding);
+      context.lineTo(x, y + halfSize - padding);
+    }
+
+    context.stroke();
+  }
+
+  context.restore();
+};
+
 const _renderInteractiveScene = ({
   canvas,
   elementsMap,
@@ -1146,6 +1204,9 @@ const _renderInteractiveScene = ({
       context.restore();
     }
   });
+
+  // Render collapse/expand icons for flowchart nodes
+  renderCollapseIcons(context, appState, elementsMap, allElementsMap);
 
   renderSnaps(context, appState);
 

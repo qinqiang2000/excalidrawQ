@@ -156,8 +156,9 @@ const repairBinding = <T extends ExcalidrawLinearElement>(
 };
 
 const restoreElementWithProperties = <
-  T extends Required<Omit<ExcalidrawElement, "customData">> & {
+  T extends Required<Omit<ExcalidrawElement, "customData" | "collapsed">> & {
     customData?: ExcalidrawElement["customData"];
+    collapsed?: ExcalidrawElement["collapsed"];
     /** @deprecated */
     boundElementIds?: readonly ExcalidrawElement["id"][];
     /** @deprecated */
@@ -217,6 +218,7 @@ const restoreElementWithProperties = <
     updated: element.updated ?? getUpdatedTimestamp(),
     link: element.link ? normalizeLink(element.link) : null,
     locked: element.locked ?? false,
+    collapsed: element.collapsed ?? undefined,
   };
 
   if ("customData" in element || "customData" in extra) {

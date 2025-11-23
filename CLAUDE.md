@@ -48,3 +48,10 @@ yarn fix             # Auto-fix formatting and linting issues
 - Internal packages use path aliases (see `vitest.config.mts`)
 - Build system uses esbuild for packages, Vite for the app
 - TypeScript throughout with strict configuration
+
+## Code Quality
+
+### DRY Principle
+写代码前必须先搜索现有代码：
+- 相同逻辑出现2次必须抽取公共函数
+- 类型定义必须复用，不要内联重复

@@ -89,6 +89,7 @@ export * from "./elbowArrow";
 export * from "./elementLink";
 export * from "./embeddable";
 export * from "./flowchart";
+export * from "./flowchartCollapse";
 export * from "./fractionalIndex";
 export * from "./frame";
 export * from "./groups";

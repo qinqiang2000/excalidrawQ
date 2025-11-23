@@ -1,8 +1,12 @@
-import { isElementInViewport } from "@excalidraw/element";
+import {
+  isElementInViewport,
+  isElementCollapsedByAncestor,
+} from "@excalidraw/element";
 
 import { memoize, toBrandedType } from "@excalidraw/common";
 
 import type {
+  ElementsMap,
   ExcalidrawElement,
   NonDeletedElementsMap,
   NonDeletedExcalidrawElement,
@@ -71,15 +75,22 @@ export class Renderer {
       elements,
       editingTextElement,
       newElementId,
+      allElementsMap,
     }: {
       elements: readonly NonDeletedExcalidrawElement[];
       editingTextElement: AppState["editingTextElement"];
       newElementId: ExcalidrawElement["id"] | undefined;
+      allElementsMap: ElementsMap;
     }) => {
       const elementsMap = toBrandedType<RenderableElementsMap>(new Map());
 
       for (const element of elements) {
         if (newElementId === element.id) {
+          continue;
+        }
+
+        // Skip elements that are hidden due to collapsed ancestors
+        if (isElementCollapsedByAncestor(element.id, allElementsMap)) {
           continue;
         }
 
@@ -124,11 +135,13 @@ export class Renderer {
         sceneNonce: ReturnType<InstanceType<typeof Scene>["getSceneNonce"]>;
       }) => {
         const elements = this.scene.getNonDeletedElements();
+        const allElementsMap = this.scene.getNonDeletedElementsMap();
 
         const elementsMap = getRenderableElements({
           elements,
           editingTextElement,
           newElementId,
+          allElementsMap,
         });
 
         const visibleElements = getVisibleCanvasElements({
