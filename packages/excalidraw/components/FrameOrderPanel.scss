@@ -48,6 +48,7 @@
     cursor: grab;
     transition: all 0.15s ease;
     user-select: none;
+    position: relative;
 
     &:hover {
       background: var(--color-surface-mid);
@@ -62,9 +63,28 @@
       background: var(--color-surface-mid);
     }
 
-    &--drop-target {
-      border: 2px dashed var(--color-primary);
-      background: var(--color-primary-light);
+    // Insert line indicator - before
+    &--drop-before::before {
+      content: "";
+      position: absolute;
+      top: -0.25rem;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--color-primary);
+      border-radius: 2px;
+    }
+
+    // Insert line indicator - after
+    &--drop-after::after {
+      content: "";
+      position: absolute;
+      bottom: -0.25rem;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--color-primary);
+      border-radius: 2px;
     }
 
     &-index {
@@ -109,13 +129,3 @@
   }
 }
 
-// Dark mode adjustments
-.excalidraw.theme--dark {
-  .frame-order-panel {
-    &__item {
-      &--drop-target {
-        background: rgba(var(--color-primary-rgb), 0.2);
-      }
-    }
-  }
-}
