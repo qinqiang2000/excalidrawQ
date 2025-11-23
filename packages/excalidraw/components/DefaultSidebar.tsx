@@ -21,7 +21,7 @@ import { LibraryMenu } from "./LibraryMenu";
 import { SearchMenu } from "./SearchMenu";
 import { Sidebar } from "./Sidebar/Sidebar";
 import { withInternalFallback } from "./hoc/withInternalFallback";
-import { frameToolIcon, LibraryIcon, searchIcon } from "./icons";
+import { presentationIcon, LibraryIcon, searchIcon } from "./icons";
 
 import type { SidebarProps, SidebarTriggerProps } from "./Sidebar/common";
 
@@ -104,11 +104,11 @@ export const DefaultSidebar = Object.assign(
                 <Sidebar.TabTrigger tab={CANVAS_SEARCH_TAB}>
                   {searchIcon}
                 </Sidebar.TabTrigger>
+                <Sidebar.TabTrigger tab={FRAME_ORDER_TAB}>
+                  {presentationIcon}
+                </Sidebar.TabTrigger>
                 <Sidebar.TabTrigger tab={LIBRARY_SIDEBAR_TAB}>
                   {LibraryIcon}
-                </Sidebar.TabTrigger>
-                <Sidebar.TabTrigger tab={FRAME_ORDER_TAB}>
-                  {frameToolIcon}
                 </Sidebar.TabTrigger>
                 <DefaultSidebarTabTriggersTunnel.Out />
               </Sidebar.TabTriggers>
