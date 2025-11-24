@@ -334,6 +334,7 @@ function CommandPaletteInner({
         actionManager.actions.viewMode,
         actionManager.actions.gridMode,
         actionManager.actions.objectsSnapMode,
+        actionManager.actions.toggleCollapseIcons,
         actionManager.actions.toggleShortcuts,
         actionManager.actions.selectAll,
         actionManager.actions.toggleElementLock,

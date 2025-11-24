@@ -1,3 +1,4 @@
+import { CODES, KEYS } from "@excalidraw/common";
 import { CaptureUpdateAction } from "@excalidraw/element";
 
 import { collapseIconsIcon } from "../components/icons";
@@ -9,8 +10,8 @@ import type { AppState } from "../types";
 export const actionToggleCollapseIcons = register({
   name: "toggleCollapseIcons",
   icon: collapseIconsIcon,
-  keywords: ["collapse", "expand", "flowchart", "tree"],
-  label: "labels.showCollapseIcons",
+  keywords: ["mind", "mindmap", "collapse", "expand", "flowchart", "tree"],
+  label: "labels.collapseIcons",
   viewMode: true,
   trackEvent: {
     category: "canvas",
@@ -26,4 +27,6 @@ export const actionToggleCollapseIcons = register({
     };
   },
   checked: (appState: AppState) => appState.showCollapseIcons,
+  keyTest: (event) =>
+    !event[KEYS.CTRL_OR_CMD] && event.altKey && event.code === CODES.M,
 });
