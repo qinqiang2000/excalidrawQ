@@ -2893,7 +2893,12 @@ class App extends React.Component<AppProps, AppState> {
       prevSelectedIds.length !== currentSelectedIds.length ||
       prevSelectedIds.some((id) => !this.state.selectedElementIds[id]);
 
-    if (selectionChanged && currentSelectedIds.length > 0) {
+    // Detect if we're exiting presentation mode
+    const isExitingPresentationMode =
+      !this.state.presentationMode.enabled &&
+      prevState.presentationMode.enabled;
+
+    if (selectionChanged && currentSelectedIds.length > 0 && !isExitingPresentationMode) {
       const allFrames = this.scene
         .getNonDeletedElements()
         .filter((e) => e.type === "frame");
