@@ -180,12 +180,12 @@ export default defineConfig(({ mode }) => {
             },
             {
               urlPattern: new RegExp("locales/[^/]+.js"),
-              handler: "CacheFirst",
+              handler: "StaleWhileRevalidate",
               options: {
                 cacheName: "locales",
                 expiration: {
                   maxEntries: 50,
-                  maxAgeSeconds: 60 * 60 * 24 * 30, // <== 30 days
+                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
                 },
               },
             },

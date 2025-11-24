@@ -246,6 +246,7 @@ import {
   StoreDelta,
   type ApplyToOptions,
   positionElementsOnGrid,
+  isElementCollapsedByAncestor,
 } from "@excalidraw/element";
 
 import type { LocalPoint, Radians } from "@excalidraw/math";
@@ -1409,6 +1410,14 @@ class App extends React.Component<AppProps, AppState> {
           this.resetEditingFrame(f);
         }
         // if frame not visible, don't render its name
+        return null;
+      }
+
+      // Don't render frame name if frame is collapsed
+      if (isElementCollapsedByAncestor(f.id, this.scene.getNonDeletedElementsMap())) {
+        if (this.state.editingFrame === f.id) {
+          this.resetEditingFrame(f);
+        }
         return null;
       }
 

@@ -58,7 +58,8 @@ export type ShortcutName =
   | "imageExport"
   | "commandPalette"
   | "searchMenu"
-  | "toggleRecentFiles";
+  | "toggleRecentFiles"
+  | "toggleSidebar";
 
 const shortcutMap: Record<ShortcutName, string[]> = {
   toggleTheme: [getShortcutKey("Shift+Alt+D")],
@@ -124,6 +125,7 @@ const shortcutMap: Record<ShortcutName, string[]> = {
   wrapSelectionInFrame: [],
   toggleRecentFiles: [getShortcutKey("CtrlOrCmd+E")],
   present: [getShortcutKey("CtrlOrCmd+Shift+F5")],
+  toggleSidebar: [getShortcutKey("Alt+B")],
 };
 
 export const getShortcutFromShortcutName = (name: ShortcutName, idx = 0) => {

@@ -1,5 +1,10 @@
+import { getFrameChildren } from "./frame";
 import { getElementsInGroup } from "./groups";
-import { isElbowArrow, isFlowchartNodeElement } from "./typeChecks";
+import {
+  isElbowArrow,
+  isFlowchartNodeElement,
+  isFrameLikeElement,
+} from "./typeChecks";
 import type {
   ElementsMap,
   ExcalidrawArrowElement,
@@ -305,6 +310,20 @@ export const isElementCollapsedByAncestor = (
             return true;
           }
         }
+      }
+    }
+  }
+
+  // Handle frame elements: if all children are hidden by collapse, hide the frame too
+  if (isFrameLikeElement(element)) {
+    const frameChildren = getFrameChildren(elementsMap, element.id);
+    // If frame has children, check if ALL children are collapsed
+    if (frameChildren.length > 0) {
+      const allChildrenCollapsed = frameChildren.every((child) =>
+        isElementCollapsedByAncestor(child.id, elementsMap),
+      );
+      if (allChildrenCollapsed) {
+        return true;
       }
     }
   }

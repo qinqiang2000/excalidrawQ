@@ -314,6 +314,10 @@ export const HelpDialog = ({ onClose }: { onClose?: () => void }) => {
               shortcuts={[getShortcutKey("Alt+/")]}
             />
             <Shortcut
+              label={t("toolBar.sidebar")}
+              shortcuts={[getShortcutFromShortcutName("toggleSidebar")]}
+            />
+            <Shortcut
               label={t("search.title")}
               shortcuts={[getShortcutFromShortcutName("searchMenu")]}
             />

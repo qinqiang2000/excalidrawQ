@@ -96,5 +96,6 @@ export { actionToggleLinearEditor } from "./actionLinearEditor";
 
 export { actionToggleSearchMenu } from "./actionToggleSearchMenu";
 export { actionToggleRecentFiles } from "./actionToggleRecentFiles";
+export { actionToggleSidebar } from "./actionToggleSidebar";
 
 export { actionToggleCropEditor } from "./actionCropEditor";

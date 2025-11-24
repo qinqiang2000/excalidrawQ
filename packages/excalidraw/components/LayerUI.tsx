@@ -1,16 +1,18 @@
 import clsx from "clsx";
-import React from "react";
+import React, { useMemo } from "react";
 
 import {
   CLASSES,
   DEFAULT_SIDEBAR,
+  FRAME_ORDER_TAB,
+  LIBRARY_SIDEBAR_TAB,
   TOOL_TYPE,
   arrayToMap,
   capitalizeString,
   isShallowEqual,
 } from "@excalidraw/common";
 
-import { mutateElement } from "@excalidraw/element";
+import { getFrameLikeElements, mutateElement } from "@excalidraw/element";
 
 import { showSelectedShapeActions } from "@excalidraw/element";
 
@@ -394,6 +396,12 @@ const LayerUI = ({
 
   const isSidebarDocked = useAtomValue(isSidebarDockedAtom);
 
+  // 当画布有多个frame时，默认显示"演示顺序"tab
+  const defaultSidebarTab = useMemo(() => {
+    const frames = getFrameLikeElements(elements);
+    return frames.length > 1 ? FRAME_ORDER_TAB : LIBRARY_SIDEBAR_TAB;
+  }, [elements]);
+
   const layerUIJSX = (
     <>
       {/* ------------------------- tunneled UI ---------------------------- */}
@@ -417,7 +425,7 @@ const LayerUI = ({
             );
           }
         }}
-        tab={DEFAULT_SIDEBAR.defaultTab}
+        tab={defaultSidebarTab}
       />
 
       <DefaultOverwriteConfirmDialog />
