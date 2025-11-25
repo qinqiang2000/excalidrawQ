@@ -423,6 +423,7 @@ function CommandPaletteInner({
           category: DEFAULT_CATEGORIES.app,
           icon: presentationIcon,
           viewMode: false,
+          keywords: ["presentation", "order", "frame", "frames", "slide", "slides"],
           perform: () => {
             setAppState({
               openSidebar: {
