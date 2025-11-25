@@ -2909,19 +2909,25 @@ class App extends React.Component<AppProps, AppState> {
           .map((id) => this.scene.getElement(id))
           .filter(Boolean);
 
-        // Check if any selected element is a frame
-        const hasSelectedFrame = selectedElements.some(
+        // Count how many selected elements are frames
+        const selectedFrameCount = selectedElements.filter(
           (el) => el && el.type === "frame",
-        );
+        ).length;
 
-        if (hasSelectedFrame) {
+        // Only auto-open if 2+ frames are selected
+        if (selectedFrameCount >= 2) {
           // Auto-open frame order panel
-          this.setState({
-            openSidebar: {
-              name: DEFAULT_SIDEBAR.name,
-              tab: FRAME_ORDER_TAB,
-            },
-          });
+          // Use setTimeout to defer opening the sidebar until after the current
+          // event loop completes, preventing useOutsideClick from immediately
+          // closing it when the selection was made by clicking on the canvas
+          setTimeout(() => {
+            this.setState({
+              openSidebar: {
+                name: DEFAULT_SIDEBAR.name,
+                tab: FRAME_ORDER_TAB,
+              },
+            });
+          }, 0);
         }
       }
     }
@@ -7912,9 +7918,9 @@ class App extends React.Component<AppProps, AppState> {
                     this,
                   ),
                   showHyperlinkPopup:
-                    hitElement.link || isEmbeddableElement(hitElement)
+                    (hitElement.link || isEmbeddableElement(hitElement)
                       ? "info"
-                      : false,
+                      : false) as AppState["showHyperlinkPopup"],
                 };
               });
               pointerDownState.hit.wasAddedToSelection = true;
