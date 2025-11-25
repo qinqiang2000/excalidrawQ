@@ -233,7 +233,7 @@ const APP_STATE_STORAGE_CONF = (<
   stats: { browser: true, export: false, server: false },
   startBoundElement: { browser: false, export: false, server: false },
   suggestedBindings: { browser: false, export: false, server: false },
-  frameRendering: { browser: false, export: false, server: false },
+  frameRendering: { browser: true, export: true, server: true },
   frameToHighlight: { browser: false, export: false, server: false },
   editingFrame: { browser: false, export: false, server: false },
   elementsToHighlight: { browser: false, export: false, server: false },

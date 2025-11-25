@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   DEFAULT_SIDEBAR,
   EVENT,
+  FRAME_ORDER_TAB,
   KEYS,
   capitalizeString,
   getShortcutKey,
@@ -51,6 +52,7 @@ import {
   mermaidLogoIcon,
   brainIconThin,
   LibraryIcon,
+  presentationIcon,
 } from "../icons";
 
 import { SHAPES } from "../shapes";
@@ -414,6 +416,20 @@ function CommandPaletteInner({
           viewMode: true,
           perform: () => {
             actionManager.executeAction(actionToggleSearchMenu);
+          },
+        },
+        {
+          label: t("frameOrderPanel.title"),
+          category: DEFAULT_CATEGORIES.app,
+          icon: presentationIcon,
+          viewMode: false,
+          perform: () => {
+            setAppState({
+              openSidebar: {
+                name: DEFAULT_SIDEBAR.name,
+                tab: FRAME_ORDER_TAB,
+              },
+            });
           },
         },
         {
