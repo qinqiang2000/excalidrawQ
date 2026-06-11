@@ -400,6 +400,29 @@ const isValidFractionalIndex = (
   return !!index;
 };
 
+/**
+ * Returns true only if the key is structurally valid for the fractional-indexing
+ * library (BASE_62). Invalid keys like "c00" or "d18" have the right letter prefix
+ * but are too short for what that prefix implies, and cause generateNKeysBetween to throw.
+ */
+const isStructurallyValidFractionalIndex = (
+  key: string | undefined,
+): boolean => {
+  if (!key) {
+    return false;
+  }
+  const head = key[0];
+  let integerLength: number;
+  if (head >= "a" && head <= "z") {
+    integerLength = head.charCodeAt(0) - "a".charCodeAt(0) + 2;
+  } else if (head >= "A" && head <= "Z") {
+    integerLength = "Z".charCodeAt(0) - head.charCodeAt(0) + 2;
+  } else {
+    return false;
+  }
+  return key.length >= integerLength;
+};
+
 const generateIndices = (
   elements: readonly ExcalidrawElement[],
   indicesGroups: number[][],
@@ -413,9 +436,12 @@ const generateIndices = (
     const lowerBoundIndex = indices.shift()!;
     const upperBoundIndex = indices.pop()!;
 
+    const rawLower = elements[lowerBoundIndex]?.index;
+    const rawUpper = elements[upperBoundIndex]?.index;
+
     const fractionalIndices = generateNKeysBetween(
-      elements[lowerBoundIndex]?.index,
-      elements[upperBoundIndex]?.index,
+      isStructurallyValidFractionalIndex(rawLower) ? rawLower : undefined,
+      isStructurallyValidFractionalIndex(rawUpper) ? rawUpper : undefined,
       indices.length,
     ) as FractionalIndex[];
 
