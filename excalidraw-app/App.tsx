@@ -420,10 +420,43 @@ const ExcalidrawWrapper = () => {
 
   useHandleLibrary({
     excalidrawAPI,
+    // Allow installing libraries from any URL (not just excalidraw.com), so
+    // third-party libraries can be imported online via `#addLibrary=<url>`.
+    validateLibraryUrl: () => true,
     adapter: LibraryIndexedDBAdapter,
     // TODO maybe remove this in several months (shipped: 24-03-11)
     migrationAdapter: LibraryLocalStorageMigrationAdapter,
   });
+
+  // Preload bundled default libraries (e.g. stick figures) once per browser so
+  // they show up in the library panel out of the box. `merge: true` keeps them
+  // alongside whatever the IndexedDB adapter loads (see `useHandleLibrary`).
+  useEffect(() => {
+    if (!excalidrawAPI) {
+      return;
+    }
+    const PRELOADED_LIBRARIES_KEY = "excalidraw-preloaded-default-libraries";
+    if (localStorage.getItem(PRELOADED_LIBRARIES_KEY)) {
+      return;
+    }
+    (async () => {
+      try {
+        const response = await fetch("/libraries/stick-figures.excalidrawlib");
+        if (!response.ok) {
+          return;
+        }
+        await excalidrawAPI.updateLibrary({
+          libraryItems: await response.blob(),
+          merge: true,
+          defaultStatus: "published",
+          openLibraryMenu: false,
+        });
+        localStorage.setItem(PRELOADED_LIBRARIES_KEY, "1");
+      } catch (error) {
+        console.warn("Failed to preload default libraries", error);
+      }
+    })();
+  }, [excalidrawAPI]);
 
   const [, forceRefresh] = useState(false);
 
