@@ -2,6 +2,7 @@ import {
   loginIcon,
   ExcalLogo,
   eyeIcon,
+  PlusIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { MainMenu } from "@excalidraw/excalidraw/index";
 import React from "react";
@@ -16,6 +17,7 @@ import { isExcalidrawPlusSignedUser } from "../app_constants";
 import { saveDebugState } from "./DebugCanvas";
 
 export const AppMainMenu: React.FC<{
+  onNewCanvas: () => void;
   onCollabDialogOpen: () => any;
   isCollaborating: boolean;
   isCollabEnabled: boolean;
@@ -25,6 +27,9 @@ export const AppMainMenu: React.FC<{
 }> = React.memo((props) => {
   return (
     <MainMenu>
+      <MainMenu.Item icon={PlusIcon} onSelect={() => props.onNewCanvas()}>
+        新建画布
+      </MainMenu.Item>
       <MainMenu.DefaultItems.LoadScene />
 
       <MainMenu.DefaultItems.SaveToActiveFile />

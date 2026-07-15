@@ -1194,6 +1194,23 @@ const ExcalidrawWrapper = () => {
     [setShareDialogState],
   );
 
+  const onNewCanvas = useCallback(() => {
+    if (!excalidrawAPI) {
+      return;
+    }
+    // 当前内容已由 onChange 持续保存到最近文件；重置前把 pending 的防抖保存落盘
+    LocalData.flushSave();
+    LocalData.flushFileAutoSave();
+    // 断开当前临时文件跟踪，之后的绘制会在最近文件中创建新的 画板-XXX
+    (window as any).__currentTempFileId = null;
+    excalidrawAPI.resetScene({ resetLoadingState: true });
+    excalidrawAPI.setToast({
+      message: "已新建画布，之前的内容可在「最近文件」中找回",
+      duration: 5000,
+      closable: true,
+    });
+  }, [excalidrawAPI]);
+
   // browsers generally prevent infinite self-embedding, there are
   // cases where it still happens, and while we disallow self-embedding
   // by not whitelisting our own origin, this serves as an additional guard
@@ -1330,6 +1347,7 @@ const ExcalidrawWrapper = () => {
         }}
       >
         <AppMainMenu
+          onNewCanvas={onNewCanvas}
           onCollabDialogOpen={onCollabDialogOpen}
           isCollaborating={isCollaborating}
           isCollabEnabled={!isCollabDisabled}
@@ -1407,6 +1425,23 @@ const ExcalidrawWrapper = () => {
 
         <CommandPalette
           customCommandPaletteItems={[
+            {
+              label: "新建画布 (New Canvas)",
+              category: DEFAULT_CATEGORIES.app,
+              predicate: true,
+              keywords: [
+                "new",
+                "canvas",
+                "blank",
+                "create",
+                "file",
+                "xinjian",
+                "huabu",
+              ],
+              perform: () => {
+                onNewCanvas();
+              },
+            },
             {
               label: "New Window",
               category: DEFAULT_CATEGORIES.app,
