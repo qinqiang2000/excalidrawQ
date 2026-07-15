@@ -50,6 +50,7 @@ import {
 
 import { FileManager } from "./FileManager";
 import { Locker } from "./Locker";
+import { setLocalStorageItemWithQuotaRecovery } from "./storageCleanup";
 import { updateBrowserStateVersion } from "./tabSync";
 
 // Get storage ID for IndexedDB isolation (PWA window ID or URL session)
@@ -109,11 +110,11 @@ const saveDataStateToLocalStorage = (
       _appState.openSidebar = null;
     }
 
-    localStorage.setItem(
+    setLocalStorageItemWithQuotaRecovery(
       getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS),
       JSON.stringify(clearElementsForLocalStorage(elements)),
     );
-    localStorage.setItem(
+    setLocalStorageItemWithQuotaRecovery(
       getSessionStorageKey(STORAGE_KEYS.LOCAL_STORAGE_APP_STATE),
       JSON.stringify(_appState),
     );
@@ -755,7 +756,10 @@ export class LocalData {
         updated = [finalFileInfo, ...recentFiles].slice(0, 10);
       }
 
-      localStorage.setItem(this.RECENT_FILES_KEY, JSON.stringify(updated));
+      setLocalStorageItemWithQuotaRecovery(
+        this.RECENT_FILES_KEY,
+        JSON.stringify(updated),
+      );
 
       return finalFileInfo.id;
     } catch (error) {
@@ -835,7 +839,7 @@ export class LocalData {
           ...recentFiles.filter((_: any, index: number) => index !== fileIndex),
         ];
 
-        localStorage.setItem(
+        setLocalStorageItemWithQuotaRecovery(
           this.RECENT_FILES_KEY,
           JSON.stringify(updatedList),
         );
@@ -872,7 +876,7 @@ export class LocalData {
       if (fileIndex >= 0) {
         recentFiles[fileIndex].description = descriptionWithTime;
         recentFiles[fileIndex].lastModified = timestamp;
-        localStorage.setItem(
+        setLocalStorageItemWithQuotaRecovery(
           this.RECENT_FILES_KEY,
           JSON.stringify(recentFiles),
         );
@@ -940,7 +944,7 @@ export class LocalData {
           ]),
         ),
       };
-      localStorage.setItem(
+      setLocalStorageItemWithQuotaRecovery(
         `excalidraw-temp-scene-${id}`,
         JSON.stringify(sceneData),
       );

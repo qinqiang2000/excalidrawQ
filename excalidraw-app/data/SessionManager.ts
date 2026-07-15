@@ -5,6 +5,8 @@
  * enabling independent content in each window while maintaining backward compatibility.
  */
 
+import { shouldCreateNewSession } from "../app_constants";
+
 const SESSION_PARAM_KEY = "session";
 const DEFAULT_SESSION_ID = "default";
 
@@ -70,7 +72,7 @@ export class SessionManager {
       // If no session parameter, this is either:
       // 1. Default session (backward compatibility)
       // 2. New session that needs to be created
-      const isNewSession = this.shouldCreateNewSession();
+      const isNewSession = shouldCreateNewSession();
 
       if (isNewSession) {
         sessionId = this.generateSessionId();
@@ -81,30 +83,6 @@ export class SessionManager {
     }
 
     return sessionId;
-  }
-
-  /**
-   * Check if we should create a new session
-   * This helps distinguish between:
-   * - User opening excalidraw.com directly (use default)
-   * - User opening from a link that should be independent (create new)
-   */
-  private shouldCreateNewSession(): boolean {
-    // Check if this window was opened via launchQueue (file associations)
-    const referrer = document.referrer;
-    const windowName = window.name;
-
-    // If opened from OS file association, drag-and-drop, or as a new window, create new session
-    if (!referrer || windowName.includes("_blank") || window.opener) {
-      return true;
-    }
-
-    // Check if there's a pending file operation
-    if (sessionStorage.getItem("pendingFileHandle")) {
-      return true;
-    }
-
-    return false;
   }
 
   /**

@@ -92,25 +92,17 @@ export const generateUniqueSessionId = (): string => {
 /**
  * Determine if a new session should be created
  * This detects scenarios where content should be isolated
+ *
+ * NOTE: session isolation must be opt-in (explicit `?session=` param set by
+ * launchQueue / openNewSession, or a pending file operation). Heuristics like
+ * "no referrer" wrongly match every direct visit, which silently rotates the
+ * storage keys on each open — previous content is never restored and orphaned
+ * copies pile up until localStorage hits its quota and all saves fail.
  */
 export const shouldCreateNewSession = (): boolean => {
-  // Check if this window was opened via launchQueue (file associations)
-  // This is indicated by the presence of certain referrer patterns or window.name
-  const referrer = document.referrer;
-  const windowName = window.name;
-
-  // If opened from OS file association or drag-and-drop, create new session
-  if (!referrer || windowName.includes("_blank") || window.opener) {
-    return true;
-  }
-
   // Check if there's a pending file operation in sessionStorage
   // This indicates the window was opened specifically to handle a file
-  if (sessionStorage.getItem("pendingFileHandle")) {
-    return true;
-  }
-
-  return false;
+  return Boolean(sessionStorage.getItem("pendingFileHandle"));
 };
 
 /**
