@@ -49,6 +49,7 @@ import {
   actionSendBackward,
   actionBringForward,
   actionSendToBack,
+  actionToggleZenMode,
 } from "../actions";
 import { createUndoAction, createRedoAction } from "../actions/actionHistory";
 import { actionToggleViewMode } from "../actions/actionToggleViewMode";
@@ -524,6 +525,11 @@ describe("history", () => {
       expect(h.elements).toEqual([
         expect.objectContaining({ id: "A", isDeleted: false }),
       ]);
+      // zen mode hides the toolbar in this fork, so exit it before using
+      // the toolbar below (toggling zen mode must not create a history entry)
+      API.executeAction(actionToggleZenMode);
+      expect(h.state.zenModeEnabled).toBe(false);
+      expect(h.history.isUndoStackEmpty).toBeTruthy();
       const rectangle = UI.createElement("rectangle");
       expect(h.elements).toEqual([
         expect.objectContaining({ id: "A" }),

@@ -406,8 +406,8 @@ const isValidFractionalIndex = (
  * but are too short for what that prefix implies, and cause generateNKeysBetween to throw.
  */
 const isStructurallyValidFractionalIndex = (
-  key: string | undefined,
-): boolean => {
+  key: string | null | undefined,
+): key is FractionalIndex => {
   if (!key) {
     return false;
   }

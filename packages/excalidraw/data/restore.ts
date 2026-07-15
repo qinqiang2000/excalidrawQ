@@ -218,12 +218,18 @@ const restoreElementWithProperties = <
     updated: element.updated ?? getUpdatedTimestamp(),
     link: element.link ? normalizeLink(element.link) : null,
     locked: element.locked ?? false,
-    collapsed: element.collapsed ?? undefined,
   };
 
   if ("customData" in element || "customData" in extra) {
     base.customData =
       "customData" in extra ? extra.customData : element.customData;
+  }
+
+  // like customData, only set when present so restored elements stay
+  // identical across JSON round-trips (explicit `undefined` keys don't
+  // survive serialization)
+  if (element.collapsed !== undefined) {
+    base.collapsed = element.collapsed;
   }
 
   const ret = {

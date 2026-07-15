@@ -552,7 +552,7 @@ exports[`<Excalidraw/> > Test UIOptions prop > Test canvasActions > should rende
           <span
             style="text-overflow: ellipsis; overflow: hidden; white-space: nowrap;"
           >
-            Discord chat
+            Discord chat me
           </span>
         </div>
       </a>

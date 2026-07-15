@@ -20,7 +20,7 @@ describe("<Excalidraw/>", () => {
   });
 
   describe("Test zenModeEnabled prop", () => {
-    it('should show exit zen mode button when zen mode is set and zen mode option in context menu when zenModeEnabled is "undefined"', async () => {
+    it('should toggle zen mode via context menu when zenModeEnabled is "undefined" (exit button is always hidden in this fork)', async () => {
       const { container } = await render(<Excalidraw />);
       expect(
         container.getElementsByClassName("disable-zen-mode--visible").length,
@@ -35,9 +35,12 @@ describe("<Excalidraw/>", () => {
       const contextMenu = document.querySelector(".context-menu");
       fireEvent.click(queryByText(contextMenu as HTMLElement, "Zen mode")!);
       expect(h.state.zenModeEnabled).toBe(true);
+      // this fork hardcodes showExitZenModeBtn={false} (the recent-files
+      // button occupies that corner); zen mode is exited via context menu
+      // or Alt+Z instead
       expect(
         container.getElementsByClassName("disable-zen-mode--visible").length,
-      ).toBe(1);
+      ).toBe(0);
     });
 
     it("should not show exit zen mode button and zen mode option in context menu when zenModeEnabled is set", async () => {

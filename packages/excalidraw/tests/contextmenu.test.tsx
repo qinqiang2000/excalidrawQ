@@ -97,6 +97,7 @@ describe("contextMenu element", () => {
       "viewMode",
       "objectsSnapMode",
       "stats",
+      "toggleCollapseIcons",
     ];
 
     expect(contextMenu).not.toBeNull();
